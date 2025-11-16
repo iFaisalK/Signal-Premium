@@ -1,5 +1,6 @@
 // File: index.js
 // Final version: 48 Stock Symbols, "Trading_Signals" table, Counter + Strikethrough logic.
+// NEW: Adds trendStartTime to track "First Mover".
 
 require('dotenv').config();
 const express = require("express");
@@ -21,7 +22,7 @@ const dynamoDBClient = new DynamoDBClient({
   region: process.env.AWS_REGION || "eu-north-1",
 });
 
-// IMPORTANT: Pointing to the original table to retain data
+// CORRECT: Pointing to the NEW table with the correct schema (PK: symbol)
 const tableName = "Trading_Signals_2"; 
 
 // --- Static Symbol Lists (48 Stocks) ---
@@ -142,14 +143,24 @@ app.post("/webhook", async (req, res) => {
   const lastKeyTracker = term === "call1" ? "_lastCall1Key" : "_lastCall2Key";
   const lastSignalKey = signalState[symbol][lastKeyTracker];
   let newCount = 1;
+  
+  // NEW: Track Start Time for "First Mover" Arrow Logic
+  let trendStartTime = Date.now();
 
   // --- COUNTER & STRIKETHROUGH LOGIC ---
   if (lastSignalKey === stateKey) {
       // 1. SAME SIGNAL: Increment counter, keep active
-      newCount = (signalState[symbol][stateKey]?.count || 0) + 1;
+      // Keep the OLD trendStartTime because the trend hasn't changed
+      const oldSignal = signalState[symbol][stateKey];
+      newCount = (oldSignal?.count || 0) + 1;
+      if (oldSignal && oldSignal.trendStartTime) {
+          trendStartTime = oldSignal.trendStartTime;
+      }
   } else {
       // 2. NEW SIGNAL FOR THIS TERM: Reset count & deactivate ONLY the other signal in THIS term
       newCount = 1;
+      // trendStartTime is already Date.now(), which is correct for a new trend
+      
       // If term is 'call1' and signal is 'buy', deactivate 'call1_sell'
       const otherSignal = signal === "buy" ? "sell" : "buy";
       const otherKey = `${term}_${otherSignal}`;
@@ -164,9 +175,10 @@ app.post("/webhook", async (req, res) => {
     ...(signalState[symbol][stateKey] || {}), // Keep existing props
     price,
     time,
-    newSince: Date.now(),
+    newSince: Date.now(), // Updates on every "refresh" for flashing cell
     count: newCount,
-    active: true
+    active: true,
+    trendStartTime: trendStartTime // NEW: Persist the start time
   };
 
   // Update the correct tracker
