@@ -1,540 +1,271 @@
 <!DOCTYPE html>
-
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>Signal Dashboard</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-
     <style>
       body {
         font-family: "Inter", sans-serif;
       }
-
       .grid-container {
         display: grid;
-
-        grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 2fr;
+        /* Columns: Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Symbol */
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr 2fr;
+        font-size: 0.8rem;
       }
-
       .highlight-signal {
         animation: highlight-fade 15s ease-out forwards;
       }
-
       @keyframes highlight-fade {
         0% {
-          background-color: rgba(99, 102, 241, 0.5);
+          background-color: rgba(239, 68, 68, 0.4);
         }
-
+        50% {
+            background-color: rgba(34, 197, 94, 0.4);
+        }
         100% {
           background-color: transparent;
         }
       }
-
       .long-term-highlight {
         animation: long-term-flash 1s ease-out 3;
       }
-
       @keyframes long-term-flash {
         0%,
         100% {
           background-color: transparent;
         }
-
         50% {
-          background-color: rgba(250, 204, 21, 0.6);
+          background-color: rgba(234, 179, 8, 0.6); /* Strong Gold Flash */
         }
       }
-
       .tooltip {
         visibility: hidden;
-
         opacity: 0;
-
         transition: opacity 0.2s, visibility 0.2s;
-
         pointer-events: none;
       }
-
       .has-tooltip:hover .tooltip {
         visibility: visible;
-
         opacity: 1;
-      }
-
-      .news-ticker {
-        position: fixed;
-
-        bottom: 0;
-
-        left: 0;
-
-        width: 100%;
-
-        background-color: #111827; /* bg-gray-900 */
-
-        border-top: 1px solid #374151; /* border-gray-700 */
-
-        white-space: nowrap;
-
-        overflow: hidden;
-
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
-      }
-
-      .news-content {
-        display: inline-block;
-
-        padding-left: 100%;
-
-        animation: ticker-scroll 180s linear infinite;
-      }
-
-      .news-item {
-        display: inline-block;
-
-        padding: 8px 24px;
-
-        font-size: 0.8rem;
-
-        color: #d1d5db; /* text-gray-300 */
-      }
-
-      .news-item-source {
-        font-weight: 600;
-
-        color: #4f46e5;
-      }
-
-      @keyframes ticker-scroll {
-        0% {
-          transform: translateX(0);
-        }
-
-        100% {
-          transform: translateX(-100%);
-        }
       }
     </style>
   </head>
 
-  <body class="bg-gray-900 text-gray-300 h-screen flex flex-col">
-    <main id="dashboard-grid" class="flex-grow overflow-auto p-2 mb-10"></main>
+  <body class="bg-gray-100 text-gray-900 h-screen flex flex-col">
+    <main
+      id="dashboard-container"
+      class="flex-grow overflow-auto p-3 grid grid-cols-1 md:grid-cols-2 gap-3"
+    >
+      <!-- Left Column -->
+      <div id="grid-left" class="bg-white rounded-lg shadow-md overflow-hidden"></div>
+      <!-- Right Column -->
+      <div id="grid-right" class="bg-white rounded-lg shadow-md overflow-hidden"></div>
+    </main>
 
-    <audio
-      id="long-term-sound"
-      src="/audio/long-term.mp3"
-      preload="auto"
-    ></audio>
-
+    <audio id="call-1-sound" src="/audio/long-term.mp3" preload="auto"></audio>
     <audio id="call-2-sound" src="/audio/call-2.mp3" preload="auto"></audio>
 
-    <audio id="call-3-sound" src="/audio/call-3.mp3" preload="auto"></audio>
-
-    <footer class="news-ticker">
-      <div id="news-content-container" class="news-content">
-        <span class="news-item">Waiting for financial news...</span>
-      </div>
-    </footer>
-
     <script>
-      const gridContainer = document.getElementById("dashboard-grid");
+      const gridLeft = document.getElementById("grid-left");
+      const gridRight = document.getElementById("grid-right");
+      const SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell"];
 
-      const SIGNAL_KEYS = [
-        "long_buy_1",
-
-        "long_sell_1",
-
-        "short_buy_2",
-
-        "short_sell_2",
-
-        "short_buy_3",
-
-        "short_sell_3",
-      ];
-
+      // --- Sound Functions ---
+      let audioUnlocked = false;
+      const sounds = {
+        call1: new Audio("/audio/long-term.mp3"),
+        call2: new Audio("/audio/call-2.mp3")
+      };
+      
       function playSound(soundId) {
-        const sound = document.getElementById(soundId);
-
+        if (!audioUnlocked) return;
+        const sound = sounds[soundId];
         if (sound) {
           sound.currentTime = 0;
-
-          sound
-
-            .play()
-
-            .catch((error) =>
-              console.error(`Could not play sound ${soundId}:`, error)
-            );
+          sound.play().catch((error) => console.error(`Error playing ${soundId}:`, error));
         }
       }
 
-      document.body.addEventListener(
-        "click",
-
-        () => {
-          console.log("Audio unlocked by user interaction.");
-        },
-
-        { once: true }
+      document.body.addEventListener("click", () => {
+          if (audioUnlocked) return;
+          audioUnlocked = true;
+          console.log("Audio unlocked.");
+        }, { once: true }
       );
 
-      function getRelativeDateString(date) {
-        const today = new Date();
-
-        const yesterday = new Date();
-
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        today.setHours(0, 0, 0, 0);
-
-        yesterday.setHours(0, 0, 0, 0);
-
-        date.setHours(0, 0, 0, 0);
-
-        if (date.getTime() === today.getTime()) {
-          return "Today";
+      // --- Creative Counter Styling ---
+      function getCounterClass(count, isBuy) {
+        if (!count || count <= 0) return '';
+        const baseClasses = "flex items-center justify-center w-4 h-4 rounded-full text-white text-xs font-bold mr-1.5 shadow-sm";
+        let colorClass = '';
+        if (isBuy) {
+          if (count < 3) colorClass = 'bg-green-500';
+          else if (count < 6) colorClass = 'bg-green-600';
+          else colorClass = 'bg-green-800';
+        } else {
+          if (count < 3) colorClass = 'bg-red-500';
+          else if (count < 6) colorClass = 'bg-red-600';
+          else colorClass = 'bg-red-800';
         }
-
-        if (date.getTime() === yesterday.getTime()) {
-          return "Yesterday";
-        }
-
-        return date.toLocaleDateString(undefined, {
-          weekday: "long",
-
-          year: "numeric",
-
-          month: "long",
-
-          day: "numeric",
-        });
+        return `${baseClasses} ${colorClass}`;
       }
 
-      function renderGrid(symbolOrder, state) {
-        gridContainer.innerHTML = "";
-
-        const header = document.createElement("div");
-
-        header.className =
-          "grid-container text-xs font-semibold text-center text-gray-400 sticky top-0 bg-gray-900 z-10";
-
-        header.innerHTML = `
-
-
-
-<div class="p-2 border-b border-r border-gray-700 row-span-3 flex items-center justify-center">Symbol Name</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 col-span-2 bg-gray-800/50">Long Term</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 col-span-4 bg-gray-800/30">Short Term</div>
-
-
-
-<div class="p-2 border-b border-gray-700 row-span-3 flex items-center justify-center">Symbol Name</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 col-span-2">Call 1</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 col-span-2">Call 2 (M)</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 col-span-2">Call 3 (R)</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 text-green-500">Buy</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 text-red-500">Sell</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 text-green-500">Buy</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 text-red-500">Sell</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 text-green-500">Buy</div>
-
-
-
-<div class="p-2 border-b border-r border-gray-700 text-red-500">Sell</div>
-
-
-
-`;
-
-        gridContainer.appendChild(header);
-
-        let lastDateString = null;
-
-        symbolOrder.forEach((symbolDateKey, index) => {
-          const symbol = symbolDateKey.split("-")[0];
-
-          const symbolState = state[symbolDateKey];
-
-          let mostRecentSignal = null;
-
-          if (symbolState) {
-            mostRecentSignal = Object.values(symbolState).reduce(
-              (latest, signal) => {
-                if (!signal) return latest;
-
-                if (!latest || new Date(signal.time) > new Date(latest.time)) {
-                  return signal;
-                }
-
-                return latest;
-              },
-
-              null
-            );
-          }
-
-          if (mostRecentSignal) {
-            const signalDate = new Date(mostRecentSignal.time);
-
-            const dateString = getRelativeDateString(signalDate);
-
-            if (dateString !== lastDateString) {
-              if (dateString !== "Today") {
-                const dateSeparator = document.createElement("div");
-
-                // --- MODIFICATION START ---
-
-                // Added 'sticky', 'bg-gray-900', and 'z-10' for the sticky effect.
-
-                dateSeparator.className =
-                  "col-span-8 text-center text-sm font-medium text-gray-400 py-2 my-1 flex items-center sticky bg-gray-900 z-10";
-
-                // This positions the sticky header just below the main 3-row header. Adjust if needed.
-
-                dateSeparator.style.top = "88px";
-
-                // --- MODIFICATION END ---
-
-                dateSeparator.innerHTML = `<hr class="flex-grow border-gray-700"><span class="px-4">${dateString}</span><hr class="flex-grow border-gray-700">`;
-
-                gridContainer.appendChild(dateSeparator);
-              }
-
-              lastDateString = dateString;
-            }
-          }
-
-          const row = document.createElement("div");
-
-          const bgColorClass =
-            index % 2 === 0 ? "bg-gray-900/50" : "bg-gray-800/40";
-
-          row.className = `grid-container text-center ${bgColorClass}`;
-
-          let rowHTML = `<div class="p-2 border-b border-r border-gray-800 font-bold text-white text-sm flex items-center justify-start pl-4">${symbol}</div>`;
+      // --- Header Template with Premium Gold Call 1 ---
+      function createHeader() {
+        return `
+          <div class="grid-container text-xs font-semibold text-center text-gray-500 sticky top-0 bg-white z-10 shadow-sm">
+            <!-- Header Row 1 -->
+            <div class="p-2 border-b border-r border-gray-200 row-span-2 flex items-center justify-start pl-4 bg-gray-50">Symbol Name</div>
+            
+            <!-- Call 1: Premium Gold Header -->
+            <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 1 (PREMIUM)</div>
+            
+            <!-- Call 2: Standard Header -->
+            <div class="p-2 border-b border-r border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 2</div>
+            
+            <div class="p-2 border-b border-gray-200 row-span-2 flex items-center justify-end pr-4 bg-gray-50">Symbol Name</div>
+            
+            <!-- Header Row 2 -->
+            <!-- Call 1 Subheaders (Gold Tint) -->
+            <div class="p-2 border-b border-amber-200 text-green-700 bg-amber-100">Buy</div>
+            <div class="p-2 border-b border-amber-200 text-red-700 bg-amber-100">Sell</div>
+            
+            <!-- Call 2 Subheaders (Standard) -->
+            <div class="p-2 border-b border-gray-200 text-green-600 bg-gray-50">Buy</div>
+            <div class="p-2 border-b border-r border-gray-200 text-red-600 bg-gray-50">Sell</div>
+          </div>
+        `;
+      }
+
+      function renderGrid(container, scriptList, state) {
+        let html = createHeader();
+        
+        scriptList.forEach((symbol, index) => {
+          const symbolState = state[symbol];
+          // Base row background (alternating)
+          const baseRowBg = index % 2 === 0 ? "bg-white" : "bg-gray-50";
+          
+          let rowHTML = `<div class="grid-container text-center ${baseRowBg}">`;
+          
+          // Symbol Name (Left)
+          rowHTML += `<div class="p-2 border-b border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4">${symbol}</div>`;
 
           SIGNAL_KEYS.forEach((key, cellIndex) => {
-            const signalData = state[symbolDateKey]
-              ? state[symbolDateKey][key]
-              : null;
+            const signalData = symbolState ? symbolState[key] : null;
+            const isCall1 = key.startsWith("call1");
+            
+            // --- PREMIUM GOLD COLUMN LOGIC ---
+            let cellBgClass = "";
+            let borderColorClass = "border-gray-200"; 
 
-            let cellContent = "";
-
-            const borderClass =
-              cellIndex === 1 || cellIndex === 3 || cellIndex === 5
-                ? "border-r"
-                : "";
-
-            let cellClasses = `p-2 border-b ${borderClass} border-gray-800 text-xs transition-colors duration-500`;
-
-            if (signalData) {
-              const isBuy = key.includes("buy");
-
-              const colorClass = isBuy ? "text-green-400" : "text-red-400";
-
-              const fontClass = "font-bold text-sm";
-
-              const formattedTime = new Date(
-                signalData.time
-              ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-              const now = Date.now();
-
-              const isLongTerm = key.startsWith("long");
-
-              const animationDuration = isLongTerm ? 3000 : 15000;
-
-              const isStillNew =
-                signalData.newSince &&
-                now - signalData.newSince < animationDuration;
-
-              const animationClass = isStillNew
-                ? isLongTerm
-                  ? "long-term-highlight"
-                  : "highlight-signal"
-                : "";
-
-              cellClasses += ` has-tooltip relative ${animationClass}`;
-
-              cellContent = `
-
-
-
-<div class="${colorClass} ${fontClass}">${signalData.price}</div>
-
-
-
-<div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-800 text-white text-xs rounded-md shadow-lg z-20">
-
-
-
-Time: <span class="font-bold">${formattedTime}</span>
-
-
-
-</div>
-
-
-
-`;
+            if (isCall1) {
+                // Alternating gold backgrounds
+                cellBgClass = index % 2 === 0 ? "bg-amber-50" : "bg-amber-100/60";
+                borderColorClass = "border-amber-200/60";
             }
 
+            const borderRight = (cellIndex === 1 || cellIndex === 3) ? "border-r" : "";
+            let cellClasses = `p-2 border-b ${borderRight} ${borderColorClass} text-xs transition-colors duration-500 h-10 flex items-center justify-center ${cellBgClass}`;
+
+            let cellContent = "";
+            if (signalData) {
+              const isBuy = key.includes("buy");
+              const isActive = signalData.active !== false;
+              const strikethroughClass = isActive ? '' : 'line-through opacity-50';
+              
+              // Darker colors for Call 1
+              const activeGreen = isCall1 ? 'text-green-700' : 'text-green-600';
+              const activeRed = isCall1 ? 'text-red-700' : 'text-red-600';
+
+              const colorClass = isBuy 
+                ? (isActive ? activeGreen : 'text-gray-400')
+                : (isActive ? activeRed : 'text-gray-400');
+              
+              const fontClass = isCall1 ? "font-extrabold text-sm" : "font-bold text-sm";
+              const formattedTime = new Date(signalData.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+              
+              const now = Date.now();
+              const animationDuration = isCall1 ? 3000 : 15000;
+              const isStillNew = signalData.newSince && now - signalData.newSince < animationDuration && isActive;
+              const animationClass = isStillNew ? (isCall1 ? "long-term-highlight" : "highlight-signal") : "";
+              
+              // Counter & Tooltip
+              const count = signalData.count || 0;
+              const countDisplay = (count > 0 && isActive) ? `<span class="${getCounterClass(count, isBuy)}">${count}</span>` : '';
+              const tooltipCount = signalData.count ? ` | Count: <span class="font-bold">${signalData.count}</span>` : '';
+              const status = isActive ? '' : ' (Inactive)';
+
+              cellClasses += ` has-tooltip relative ${animationClass}`;
+              cellContent = `
+                <div class="${colorClass} ${fontClass} flex justify-center items-center">
+                  ${countDisplay}
+                  <span class="${strikethroughClass}">${signalData.price}</span>
+                </div>
+                <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
+                  Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
+                </div>
+              `;
+            }
             rowHTML += `<div class="${cellClasses}">${cellContent}</div>`;
           });
 
-          rowHTML += `<div class="p-2 border-b border-l border-gray-800 font-bold text-white text-sm flex items-center justify-end pr-4">${symbol}</div>`;
+          // Symbol Name (Right)
+          rowHTML += `<div class="p-2 border-b border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4">${symbol}</div>`;
 
-          row.innerHTML = rowHTML;
-
-          gridContainer.appendChild(row);
+          rowHTML += `</div>`;
+          html += rowHTML;
         });
+        container.innerHTML = html;
       }
 
+      // --- WebSocket Logic ---
       function connectWebSocket() {
-        const wsProtocol =
-          window.location.protocol === "https:" ? "wss://" : "ws://";
-
+        const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
         const ws = new WebSocket(wsProtocol + window.location.host);
 
-        ws.onopen = () => console.log("WebSocket connection established.");
-
+        ws.onopen = () => console.log("Connected.");
         ws.onclose = () => {
-          console.log("WebSocket connection closed. Reconnecting...");
-
-          gridContainer.innerHTML =
-            '<p class="text-center text-gray-500 mt-10">Reconnecting...</p>';
-
+          gridLeft.innerHTML = '<p class="text-center text-gray-500 mt-10">Reconnecting...</p>';
+          gridRight.innerHTML = "";
           setTimeout(connectWebSocket, 3000);
         };
-
-        ws.onerror = (error) => {
-          console.error("WebSocket error:", error);
-
-          ws.close();
-        };
+        ws.onerror = (error) => console.error("WS Error:", error);
 
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-
-            if (data.type === "news-update") {
-              const newsContainer = document.getElementById(
-                "news-content-container"
-              );
-
-              if (
-                !data.payload ||
-                !Array.isArray(data.payload) ||
-                data.payload.length === 0
-              ) {
-                return;
-              }
-
-              newsContainer.innerHTML = "";
-
-              data.payload.forEach((article) => {
-                const newsItem = document.createElement("span");
-
-                newsItem.className = "news-item";
-
-                const source = document.createElement("span");
-
-                source.className = "news-item-source";
-
-                source.textContent = `${article.source.toUpperCase()}: `;
-
-                const title = document.createTextNode(article.title);
-
-                newsItem.appendChild(source);
-
-                newsItem.appendChild(title);
-
-                newsContainer.appendChild(newsItem);
-              });
-            } else if (data.state && data.symbolOrder) {
+            if (data.state && data.scriptListLeft && data.scriptListRight) {
+              // Play Sound only for new, active signals
               let newSignalKey = null;
-
-              const mostRecentSymbolDateKey = data.symbolOrder[0];
-
-              if (data.state[mostRecentSymbolDateKey]) {
-                for (const key in data.state[mostRecentSymbolDateKey]) {
-                  const signalData = data.state[mostRecentSymbolDateKey][key];
-
-                  if (
-                    signalData &&
-                    signalData.newSince &&
-                    Date.now() - signalData.newSince < 3000
-                  ) {
-                    newSignalKey = key;
-
-                    break;
-                  }
+              for (const symbol of [...data.scriptListLeft, ...data.scriptListRight]) {
+                if (data.state[symbol]) {
+                    for (const key of SIGNAL_KEYS) { 
+                        const signalData = data.state[symbol][key];
+                        if (signalData && signalData.newSince && Date.now() - signalData.newSince < 3000 && signalData.active !== false) {
+                            newSignalKey = key;
+                            break;
+                        }
+                    }
                 }
+                if (newSignalKey) break;
               }
-
               if (newSignalKey) {
-                if (newSignalKey.startsWith("long")) {
-                  playSound("long-term-sound");
-                } else if (
-                  newSignalKey.includes("_buy_2") ||
-                  newSignalKey.includes("_sell_2")
-                ) {
-                  playSound("call-2-sound");
-                } else {
-                  playSound("call-3-sound");
-                }
+                if (newSignalKey.startsWith("call1")) playSound("call1");
+                else if (newSignalKey.startsWith("call2")) playSound("call2");
               }
-
-              renderGrid(data.symbolOrder, data.state);
+              renderGrid(gridLeft, data.scriptListLeft, data.state);
+              renderGrid(gridRight, data.scriptListRight, data.state);
             }
-          } catch (error) {
-            console.error("Error processing message:", error);
-          }
+          } catch (error) { console.error("Error:", error); }
         };
       }
 
