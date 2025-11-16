@@ -18,8 +18,8 @@
       /* --- GRID CONFIGURATION --- */
       .grid-container {
         display: grid;
-        /* Removed Mute Column. Now 5 columns: Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Symbol */
-        grid-template-columns: 2fr 1fr 1fr 1fr 1fr 2fr; 
+        /* Columns: Mute | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Symbol */
+        grid-template-columns: 30px 2fr 1fr 1fr 1fr 1fr 2fr; 
         font-size: 0.8rem;
         align-items: center;
       }
@@ -42,21 +42,30 @@
         50% { background-color: rgba(234, 179, 8, 0.8); }
       }
 
-      /* --- ROW FLASHING (Applied to Grid Container) --- */
-      .flash-row-green {
-        animation: row-flash-green 0.8s infinite alternate;
+      /* --- UNIFIED SYMBOL FLASHING (SLOWER) --- */
+      .flash-green {
+        /* Unified flash, 1.2s duration */
+        animation: premium-flash-green 1.2s infinite;
+        border-radius: 6px;
       }
-      @keyframes row-flash-green {
-        0% { background-color: rgba(255, 255, 255, 1); }
-        100% { background-color: rgba(34, 197, 94, 0.3); box-shadow: inset 0 0 15px rgba(34,197,94,0.3); }
+      .flash-red {
+        /* Unified flash, 1.2s duration */
+        animation: premium-flash-red 1.2s infinite;
+        border-radius: 6px;
       }
-
-      .flash-row-red {
-        animation: row-flash-red 0.8s infinite alternate;
+      
+      /* Green Flash Pattern */
+      @keyframes premium-flash-green {
+        0% { background-color: transparent; box-shadow: none; }
+        50% { background-color: rgba(34, 197, 94, 0.9); color: white; box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); }
+        100% { background-color: transparent; box-shadow: none; }
       }
-      @keyframes row-flash-red {
-        0% { background-color: rgba(255, 255, 255, 1); }
-        100% { background-color: rgba(239, 68, 68, 0.3); box-shadow: inset 0 0 15px rgba(239,68,68,0.3); }
+      
+      /* Red Flash Pattern */
+      @keyframes premium-flash-red {
+        0% { background-color: transparent; box-shadow: none; }
+        50% { background-color: rgba(239, 68, 68, 0.9); color: white; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+        100% { background-color: transparent; box-shadow: none; }
       }
 
       .tooltip {
@@ -70,27 +79,124 @@
         opacity: 1;
       }
       
-      /* Pause button styling */
-      .pause-btn {
+      /* Per-Row Mute Button */
+      .mute-btn {
           cursor: pointer;
-          opacity: 0.6;
+          opacity: 0.3;
           transition: opacity 0.2s;
-          padding: 2px 6px;
+          padding: 4px;
           border-radius: 4px;
-          background-color: rgba(255, 255, 255, 0.8);
-          border: 1px solid #ccc;
-          margin-right: 8px;
-          font-size: 0.7rem;
-          font-weight: bold;
       }
-      .pause-btn:hover { opacity: 1; background-color: #fff; }
+      .mute-btn:hover { opacity: 1; background-color: #f3f4f6; }
+      .mute-btn.muted { opacity: 1; color: red; }
+
+      /* Per-Row Pause Button (Icon Only) */
+      .stop-row-btn {
+          cursor: pointer;
+          opacity: 0.7;
+          font-size: 0.8rem; /* Slightly larger icon */
+          margin-left: 8px;
+          padding: 4px 8px;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 9999px; /* Pill shape */
+          color: #4b5563;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          transition: all 0.2s;
+      }
+      .stop-row-btn:hover { 
+          background: #f3f4f6; 
+          color: #1f2937;
+          transform: scale(1.05);
+      }
+
+      /* "STRONG" Badge - Cylindrical/Pill Shape */
+      .strong-badge {
+          font-size: 0.6rem;
+          font-weight: 800;
+          padding: 2px 8px;
+          border-radius: 9999px; /* Fully cylindrical */
+          margin-left: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          background-color: white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          animation: pulse-badge 1.5s infinite;
+          border-width: 1px;
+          display: inline-block;
+      }
+      .badge-buy { 
+          color: #166534; /* Deep Green Text */
+          border-color: #22c55e; 
+          background-color: #f0fdf4; /* Light Green Bg */
+      }
+      .badge-sell { 
+          color: #991b1b; /* Deep Red Text */
+          border-color: #ef4444; 
+          background-color: #fef2f2; /* Light Red Bg */
+      }
+      
+      @keyframes pulse-badge {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.9; }
+          100% { transform: scale(1); opacity: 1; }
+      }
+
+      /* Floating Global Controls */
+      .floating-controls {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          z-index: 100; 
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          align-items: flex-end;
+      }
+
+      .control-btn {
+          padding: 10px 20px;
+          color: white;
+          font-weight: bold;
+          border-radius: 9999px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          transition: transform 0.1s, background-color 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border: none;
+          cursor: pointer;
+          min-width: 160px;
+          justify-content: center;
+          font-family: 'Inter', sans-serif;
+      }
+      
+      .btn-stop { background-color: #ef4444; }
+      .btn-stop:hover { background-color: #dc2626; transform: scale(1.02); }
+      
+      .btn-pause { background-color: #f59e0b; }
+      .btn-pause:hover { background-color: #d97706; transform: scale(1.02); }
+      
+      .btn-resume { background-color: #3b82f6; }
+      .btn-resume:hover { background-color: #2563eb; transform: scale(1.02); }
+
+      .control-btn:active { transform: scale(0.98); }
     </style>
   </head>
 
   <body class="bg-gray-100 text-gray-900 h-screen flex flex-col">
     
-    <!-- Removed Header -->
+    <!-- Floating Control Buttons -->
+    <div class="floating-controls">
+        <button id="global-pause-btn" class="control-btn btn-pause" onclick="toggleGlobalPause()">
+            <span>⏸️</span> Pause All
+        </button>
+        <button id="global-stop-btn" class="control-btn btn-stop" onclick="acknowledgeAllFlashing()">
+            <span>🛑</span> Stop All
+        </button>
+    </div>
 
+    <!-- Main Container -->
     <main
       id="dashboard-container"
       class="flex-grow overflow-auto p-3 grid grid-cols-1 md:grid-cols-2 gap-3"
@@ -105,11 +211,15 @@
     <script>
       const gridLeft = document.getElementById("grid-left");
       const gridRight = document.getElementById("grid-right");
+      const globalStopBtn = document.getElementById("global-stop-btn");
+      const globalPauseBtn = document.getElementById("global-pause-btn");
       const SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell"];
 
       // --- STATE ---
-      // Tracks specific match timestamps to ignore (stop flashing)
+      let lastAcknowledgeTime = 0; 
+      let isGlobalPaused = false; 
       const rowMuteTimestamps = {}; 
+      const mutedSymbols = new Set();
       let lastData = null; 
 
       // --- Sound ---
@@ -136,14 +246,47 @@
       );
 
       // --- ACTIONS ---
-      function muteRowFlashing(symbol, matchTime) {
-          // Store the specific match time for this symbol
-          // This allows the row to flash again if a NEW match occurs later
-          if (!rowMuteTimestamps[symbol]) {
-              rowMuteTimestamps[symbol] = [];
-          }
-          rowMuteTimestamps[symbol].push(matchTime);
+      function acknowledgeAllFlashing() {
+          lastAcknowledgeTime = Date.now();
           
+          const originalText = globalStopBtn.innerHTML;
+          globalStopBtn.innerHTML = "<span>✅</span> Stopped!";
+          globalStopBtn.style.backgroundColor = "#16a34a"; 
+          
+          setTimeout(() => {
+              globalStopBtn.innerHTML = originalText;
+              globalStopBtn.style.backgroundColor = ""; 
+          }, 1000);
+
+          if (isGlobalPaused) toggleGlobalPause(); 
+          renderUI();
+      }
+
+      function toggleGlobalPause() {
+          isGlobalPaused = !isGlobalPaused;
+          if (isGlobalPaused) {
+              globalPauseBtn.innerHTML = "<span>▶️</span> Resume";
+              globalPauseBtn.className = "control-btn btn-resume";
+          } else {
+              globalPauseBtn.innerHTML = "<span>⏸️</span> Pause All";
+              globalPauseBtn.className = "control-btn btn-pause";
+          }
+          renderUI();
+      }
+
+      function toggleSymbolMute(symbol) {
+          if (mutedSymbols.has(symbol)) mutedSymbols.delete(symbol);
+          else mutedSymbols.add(symbol);
+          renderUI();
+      }
+
+      function muteRowFlashing(symbol, matchTime) {
+          if (!rowMuteTimestamps[symbol]) rowMuteTimestamps[symbol] = [];
+          rowMuteTimestamps[symbol].push(matchTime);
+          renderUI();
+      }
+      
+      function renderUI() {
           if (lastData) {
              renderGrid(gridLeft, lastData.scriptListLeft, lastData.state);
              renderGrid(gridRight, lastData.scriptListRight, lastData.state);
@@ -170,7 +313,8 @@
       function createHeader() {
         return `
           <div class="grid-container text-xs font-semibold text-center text-gray-500 sticky top-0 bg-white z-10 shadow-sm border-b border-gray-300">
-            <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-4 bg-gray-50">Symbol</div>
+            <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50">🔔</div>
+            <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-gray-50">Symbol</div>
             
             <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 1</div>
             <div class="p-2 border-b border-r border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 2</div>
@@ -191,23 +335,21 @@
           const symbolState = state[symbol];
           let rowBaseClass = index % 2 === 0 ? "bg-white" : "bg-gray-50";
           
-          // --- MATCHING SIGNALS LOGIC ---
+          // --- MATCHING LOGIC ---
           const c1Buy = symbolState['call1_buy']?.active;
           const c1Sell = symbolState['call1_sell']?.active;
           const c2Buy = symbolState['call2_buy']?.active;
           const c2Sell = symbolState['call2_sell']?.active;
 
-          let rowFlashClass = ""; // Applied to the CONTAINER
-          let showArrow = false;
-          let winner = null; // "c1" or "c2"
+          let symbolFlashClass = ""; 
+          let strongBadge = "";
           let matchTime = 0;
           let isCurrentlyFlashing = false;
           
           let isMatch = (c1Buy && c2Buy) || (c1Sell && c2Sell);
           
           if (isMatch) {
-              let t1 = 0;
-              let t2 = 0;
+              let t1 = 0; t2 = 0;
               
               if (c1Buy) {
                   t1 = symbolState['call1_buy'].trendStartTime || symbolState['call1_buy'].time || 0;
@@ -221,57 +363,70 @@
               t2 = (typeof t2 === 'number') ? t2 : (isNaN(Date.parse(t2)) ? 0 : Date.parse(t2));
               
               matchTime = Math.max(t1, t2);
-
-              // Check if this specific match has been muted
               const isRowMuted = rowMuteTimestamps[symbol] && rowMuteTimestamps[symbol].includes(matchTime);
+              const shouldFlash = (matchTime > lastAcknowledgeTime) && !isRowMuted && !isGlobalPaused && !mutedSymbols.has(symbol);
 
-              // Flash if NOT muted
-              const shouldFlash = !isRowMuted;
+              // Winner Logic: Call 2 is "First" if t2 < t1
+              const isCall2First = t2 < t1;
+              const winner = t1 <= t2 ? "c1" : "c2"; 
 
-              if (shouldFlash) {
-                  if (c1Buy) rowFlashClass = "flash-row-green";
-                  else rowFlashClass = "flash-row-red";
-                  showArrow = true;
-                  isCurrentlyFlashing = true;
-              } else {
-                  // Still show arrow if matched, even if flashing stopped? 
-                  // Usually better to keep arrow visible to show the trend exists
-                  showArrow = true; 
+              // "STRONG" Badge Logic
+              if (winner === "c2") {
+                  const badgeColor = c1Buy ? "badge-buy" : "badge-sell";
+                  strongBadge = `<span class="strong-badge ${badgeColor}">STRONG</span>`;
               }
 
-              winner = t1 <= t2 ? "c1" : "c2"; 
+              if (shouldFlash) {
+                  isCurrentlyFlashing = true;
+                  // SET UNIFIED FLASH CLASS (REMOVED URGENT/STANDARD)
+                  if (c1Buy) { // Matching BUY
+                      symbolFlashClass = "flash-green";
+                  } else { // Matching SELL
+                      symbolFlashClass = "flash-red";
+                  }
+              }
           }
           
-          // Pause Button (Only show if currently flashing)
+          // Per-Row Pause Button (Icon Only: ⏸️)
           const pauseBtn = isCurrentlyFlashing 
-              ? `<button class="pause-btn" onclick="muteRowFlashing('${symbol}', ${matchTime})" title="Stop Flashing">⏸️ Stop</button>`
+              ? `<button class="stop-row-btn" onclick="muteRowFlashing('${symbol}', ${matchTime})" title="Pause flashing">⏸️</button>`
               : '';
-
-          let rowHTML = `<div class="grid-container text-center ${rowBaseClass} ${rowFlashClass} border-b border-gray-100">`;
           
-          // 1. Symbol Name (Left) + Pause Button
+          // Mute Icon
+          const isMuted = mutedSymbols.has(symbol);
+          const muteIcon = isMuted ? "🔕" : "🔔";
+          const muteBtnClass = isMuted ? "muted" : "";
+
+          let rowHTML = `<div class="grid-container text-center ${rowBaseClass} border-b border-gray-100">`;
+          
+          // 0. Mute Column
           rowHTML += `
-            <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-10">
-                ${pauseBtn} ${symbol}
+            <div class="p-2 border-r border-gray-200 h-full flex items-center justify-center">
+                <button class="mute-btn text-xs ${muteBtnClass}" onclick="toggleSymbolMute('${symbol}')" title="Toggle Mute">${muteIcon}</button>
+            </div>`;
+
+          // 1. Symbol Name (Left)
+          rowHTML += `
+            <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-between pl-4 h-10 ${symbolFlashClass}">
+                <div class="flex items-center">
+                    <span>${symbol}</span>
+                    ${strongBadge}
+                </div>
+                ${pauseBtn}
             </div>`;
 
           SIGNAL_KEYS.forEach((key, cellIndex) => {
             const signalData = symbolState ? symbolState[key] : null;
             const isCall1 = key.startsWith("call1");
-            const isCall2 = key.startsWith("call2");
             
-            // --- STYLE LOGIC ---
             let cellBg = "";
             let cellBorder = "border-gray-200"; 
-            
             if (isCall1) {
-                // Standard Gold background (flashing is now on the row, so we keep this consistent)
                 cellBg = index % 2 === 0 ? "bg-amber-50" : "bg-amber-100/60";
                 cellBorder = "border-amber-200/60";
             }
 
             const borderRight = (cellIndex === 1 || cellIndex === 3) ? "border-r" : "";
-            // Note: rowFlashClass is on parent, so cell backgrounds will blend with it
             let cellClasses = `p-2 ${borderRight} ${cellBorder} text-xs transition-colors duration-500 h-10 flex items-center justify-center ${cellBg}`;
 
             let cellContent = "";
@@ -292,30 +447,18 @@
               const now = Date.now();
               const animationDuration = isCall1 ? 3000 : 15000;
               const isStillNew = signalData.newSince && now - signalData.newSince < animationDuration && isActive;
-              const animationClass = isStillNew ? (isCall1 ? "long-term-highlight" : "highlight-signal") : "";
+              const animationClass = (isStillNew && !isCurrentlyFlashing) ? (isCall1 ? "long-term-highlight" : "highlight-signal") : "";
               
               const count = signalData.count || 0;
               const countDisplay = (count > 0 && isActive && isCall1) ? `<span class="${getCounterClass(count, isBuy)}">${count}</span>` : '';
               const tooltipCount = signalData.count ? ` | Count: <span class="font-bold">${signalData.count}</span>` : '';
               const status = isActive ? '' : ' (Inactive)';
 
-              // --- ARROW LOGIC ---
-              let arrowHTML = "";
-              if (isActive && showArrow) {
-                  if (winner === "c1" && isCall2) {
-                      arrowHTML = `<span class="text-lg font-bold text-black ml-2 animate-pulse">⬅️</span>`;
-                  } 
-                  else if (winner === "c2" && isCall1) {
-                      arrowHTML = `<span class="text-lg font-bold text-black ml-2 animate-pulse">➡️</span>`; 
-                  }
-              }
-
               cellClasses += ` has-tooltip relative ${animationClass}`;
               cellContent = `
                 <div class="${colorClass} ${fontClass} flex justify-center items-center w-full">
                   ${countDisplay}
                   <span class="${strikethroughClass}">${signalData.price}</span>
-                  ${arrowHTML}
                 </div>
                 <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
                   Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
@@ -326,7 +469,13 @@
           });
 
           // Symbol Right
-          rowHTML += `<div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-10">${symbol}</div>`;
+          rowHTML += `
+            <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-10 ${symbolFlashClass}">
+                <div class="flex items-center">
+                    ${strongBadge}
+                    <span class="ml-2">${symbol}</span>
+                </div>
+            </div>`;
 
           rowHTML += `</div>`;
           html += rowHTML;
