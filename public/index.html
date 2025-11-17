@@ -407,7 +407,7 @@
 
           // 1. Symbol Name (Left)
           rowHTML += `
-            <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-between pl-4 h-10 ${symbolFlashClass}">
+            <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-between pl-4 h-12 ${symbolFlashClass}">
                 <div class="flex items-center">
                     <span>${symbol}</span>
                     ${strongBadge}
@@ -427,7 +427,7 @@
             }
 
             const borderRight = (cellIndex === 1 || cellIndex === 3) ? "border-r" : "";
-            let cellClasses = `p-2 ${borderRight} ${cellBorder} text-xs transition-colors duration-500 h-10 flex items-center justify-center ${cellBg}`;
+            let cellClasses = `p-2 ${borderRight} ${cellBorder} text-xs transition-colors duration-500 h-12 flex items-center justify-center ${cellBg}`; // h-12
 
             let cellContent = "";
             if (signalData) {
@@ -435,13 +435,20 @@
               const isActive = signalData.active !== false;
               const strikethroughClass = isActive ? '' : 'line-through opacity-50';
               
-              const activeGreen = isCall1 ? 'text-green-700' : 'text-green-600';
-              const activeRed = isCall1 ? 'text-red-700' : 'text-red-600';
-              const colorClass = isBuy 
-                ? (isActive ? activeGreen : 'text-gray-400')
-                : (isActive ? activeRed : 'text-gray-400');
-              
+              // --- Color & Text Logic ---
+              let signalText = "";
+              let activeColor = "";
+              if (isBuy) {
+                signalText = "BUY";
+                activeColor = isCall1 ? 'text-green-700' : 'text-green-600';
+              } else {
+                signalText = "SELL";
+                activeColor = isCall1 ? 'text-red-700' : 'text-red-600';
+              }
+              const colorClass = isActive ? activeColor : 'text-gray-400';
               const fontClass = isCall1 ? "font-extrabold text-sm" : "font-bold text-sm";
+              const priceColor = isActive ? (isCall1 ? 'text-gray-600' : 'text-gray-500') : 'text-gray-400';
+              
               const formattedTime = new Date(signalData.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
               
               const now = Date.now();
@@ -456,12 +463,23 @@
 
               cellClasses += ` has-tooltip relative ${animationClass}`;
               cellContent = `
-                <div class="${colorClass} ${fontClass} flex justify-center items-center w-full">
-                  ${countDisplay}
-                  <span class="${strikethroughClass}">${signalData.price}</span>
+                <div class="flex flex-col justify-center items-center ${strikethroughClass}">
+                  <!-- Main Signal Text: BUY or SELL -->
+                  <div class="${colorClass} ${fontClass} flex justify-center items-center w-full">
+                    ${countDisplay}
+                    <span>${signalText}</span>
+                  </div>
+                  <!-- Sub Text: Price -->
+                  <div class="text-xs ${priceColor} mt-0.5">
+                    ${signalData.price}
+                  </div>
                 </div>
+                <!-- Tooltip -->
                 <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
-                  Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
+                  <!-- MODIFICATION: Added Price to tooltip -->
+                  Price: <span class="font-bold">${signalData.price}</span> | 
+                  Time: <span class="font-bold">${formattedTime}</span>
+                  ${tooltipCount}${status}
                 </div>
               `;
             }
@@ -470,7 +488,7 @@
 
           // Symbol Right
           rowHTML += `
-            <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-10 ${symbolFlashClass}">
+            <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-12 ${symbolFlashClass}">
                 <div class="flex items-center">
                     ${strongBadge}
                     <span class="ml-2">${symbol}</span>
