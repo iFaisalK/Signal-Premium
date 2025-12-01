@@ -41,7 +41,7 @@ const STATIC_SYMBOLS_RIGHT = [
 ]; // 24 symbols
 
 const ALL_SYMBOLS = [...STATIC_SYMBOLS_LEFT, ...STATIC_SYMBOLS_RIGHT];
-const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call3_go", "call3_1h", "call1_buy_page2", "call1_sell_page2", "call2_buy_page2", "call2_sell_page2", "call3_buy_page2", "call3_sell_page2"];
+const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call3_go", "call3_1h", "call1_page2_buy", "call1_page2_sell", "call2_page2_buy", "call2_page2_sell", "call3_page2_buy", "call3_page2_sell"];
 
 // --- State Management ---
 let signalState = {};
@@ -54,12 +54,12 @@ const createInitialSymbolState = () => ({
     call2_sell: null,
     call3_go: null,
     call3_1h: null,
-    call1_buy_page2: null,
-    call1_sell_page2: null,
-    call2_buy_page2: null,
-    call2_sell_page2: null,
-    call3_buy_page2: null,
-    call3_sell_page2: null,
+    call1_page2_buy: null,
+    call1_page2_sell: null,
+    call2_page2_buy: null,
+    call2_page2_sell: null,
+    call3_page2_buy: null,
+    call3_page2_sell: null,
     // Track last signal for EACH call separately
     _lastCall1Key: null,
     _lastCall2Key: null,
@@ -161,7 +161,7 @@ app.post("/webhook", async (req, res) => {
   } else if (term === "call3_1h") {
     stateKey = "call3_1h"; // Both buy and sell map to call3_1h
   } else {
-    stateKey = `${term}_${signal}`; // e.g., "call1_buy"
+    stateKey = `${term}_${signal}`; // e.g., "call1_buy" or "call1_page2_buy"
   }
   
   // Determine which 'last key' tracker to use based on the term

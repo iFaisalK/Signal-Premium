@@ -107,17 +107,17 @@ function createHeader() {
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50">🔔</div>
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-gray-50">Symbol</div>
       
-      <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 1</div>
-      <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 2</div>
-      <div class="p-2 border-b border-r border-gray-200 col-span-2 bg-blue-100 text-blue-600">Call 3</div>
+      <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 1</div>
+      <div class="p-2 border-b border-blue-300 col-span-2 bg-blue-400 text-white font-bold tracking-wider">CALL 2</div>
+      <div class="p-2 border-b border-r border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 3</div>
       <div class="p-2 row-span-2 flex items-center justify-end pr-4 bg-gray-50">Symbol</div>
       
-      <div class="p-2 border-amber-200 text-green-700 bg-amber-100">Buy</div>
-      <div class="p-2 border-amber-200 text-red-700 bg-amber-100">Sell</div>
       <div class="p-2 border-gray-200 text-green-600 bg-gray-50">Buy</div>
       <div class="p-2 border-gray-200 text-red-600 bg-gray-50">Sell</div>
-      <div class="p-2 border-gray-200 text-green-600 bg-blue-50">Buy</div>
-      <div class="p-2 border-r border-gray-200 text-red-600 bg-blue-50">Sell</div>
+      <div class="p-2 border-blue-200 text-green-700 bg-blue-100">Buy</div>
+      <div class="p-2 border-blue-200 text-red-700 bg-blue-100">Sell</div>
+      <div class="p-2 border-amber-200 text-green-700 bg-amber-100">Buy</div>
+      <div class="p-2 border-r border-amber-200 text-red-700 bg-amber-100">Sell</div>
     </div>
   `;
 }
@@ -129,70 +129,7 @@ function renderGrid(container, scriptList, state) {
     const symbolState = state[symbol];
     let rowBaseClass = index % 2 === 0 ? "bg-white" : "bg-gray-50";
     
-    // --- MATCHING LOGIC ---
-    const c1Buy = symbolState['call1_buy_page2']?.active;
-    const c1Sell = symbolState['call1_sell_page2']?.active;
-    const c2Buy = symbolState['call2_buy_page2']?.active;
-    const c2Sell = symbolState['call2_sell_page2']?.active;
-
-    let symbolFlashClass = ""; 
-    let strongBadge = "";
-    let matchTime = 0;
-    let isCurrentlyFlashing = false;
-    
-    let isMatch = (c1Buy && c2Buy) || (c1Sell && c2Sell);
-    
-    if (isMatch) {
-        let t1 = 0; t2 = 0;
-        
-        if (c1Buy) {
-            t1 = symbolState['call1_buy_page2'].trendStartTime || symbolState['call1_buy_page2'].time || 0;
-            t2 = symbolState['call2_buy_page2'].trendStartTime || symbolState['call2_buy_page2'].time || 0;
-        } else {
-            t1 = symbolState['call1_sell_page2'].trendStartTime || symbolState['call1_sell_page2'].time || 0;
-            t2 = symbolState['call2_sell_page2'].trendStartTime || symbolState['call2_sell_page2'].time || 0;
-        }
-        
-        t1 = (typeof t1 === 'number') ? t1 : (isNaN(Date.parse(t1)) ? 0 : Date.parse(t1));
-        t2 = (typeof t2 === 'number') ? t2 : (isNaN(Date.parse(t2)) ? 0 : Date.parse(t2));
-        
-        matchTime = Math.max(t1, t2);
-        
-        // --- Timeout Checks ---
-        const now = Date.now();
-        const timeSinceMatch = now - matchTime;
-        const isExpired = timeSinceMatch > FLASH_TIMEOUT_MS; 
-
-        const isRowMuted = rowMuteTimestamps[symbol] && rowMuteTimestamps[symbol].includes(matchTime);
-        const shouldFlash = (matchTime > lastAcknowledgeTime) && !isRowMuted && !isGlobalPaused && !mutedSymbols.has(symbol) && !isExpired;
-
-        // Winner Logic: Call 2 is "First" if t2 < t1
-        const isCall2First = t2 < t1;
-        const winner = t1 <= t2 ? "c1" : "c2"; 
-        const isStrong = winner === "c2";
-
-        // "STRONG" Badge Logic
-        if (isStrong) {
-            const badgeColor = c1Buy ? "badge-buy" : "badge-sell";
-            strongBadge = `<span class="strong-badge ${badgeColor}">STRONG</span>`;
-        }
-
-        if (shouldFlash) {
-            isCurrentlyFlashing = true;
-            if (c1Buy) symbolFlashClass = "flash-green";
-            else symbolFlashClass = "flash-red";
-        } else if (isExpired && isStrong) {
-            // --- PERSISTENCE LOGIC (After 20 mins, Strong Only) ---
-            // Static, intense background with white text
-            if (c1Buy) symbolFlashClass = "static-green";
-            else symbolFlashClass = "static-red";
-        }
-    }
-    
-    // Per-Row Pause Button
-    const pauseBtn = isCurrentlyFlashing 
-        ? `<button class="stop-row-btn" onclick="muteRowFlashing('${symbol}', ${matchTime})" title="Pause flashing">⏸️</button>`
-        : '';
+    // No matching logic for page 2 - just display signals
     
     const isMuted = mutedSymbols.has(symbol);
     const muteIcon = isMuted ? "🔕" : "🔔";
@@ -208,28 +145,25 @@ function renderGrid(container, scriptList, state) {
 
     // 1. Symbol Name (Left)
     rowHTML += `
-      <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-between pl-4 h-12 ${symbolFlashClass}">
-          <div class="flex items-center">
-              <span>${symbol}</span>
-              ${strongBadge}
-          </div>
-          ${pauseBtn}
+      <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-12">
+          <span>${symbol}</span>
       </div>`;
 
     SIGNAL_KEYS.forEach((key, cellIndex) => {
-      const page2Key = key + '_page2';
+      const page2Key = key.replace('_', '_page2_');
       const signalData = symbolState ? symbolState[page2Key] : null;
       const isCall1 = key.startsWith("call1");
       
       let cellBg = "";
       let cellBorder = "border-gray-200"; 
+      const isCall2 = key.startsWith("call2");
       const isCall3 = key.startsWith("call3");
-      if (isCall1) {
-          cellBg = index % 2 === 0 ? "bg-amber-50" : "bg-amber-100/60";
-          cellBorder = "border-amber-200/60";
-      } else if (isCall3) {
+      if (isCall2) {
           cellBg = index % 2 === 0 ? "bg-blue-50" : "bg-blue-100/60";
           cellBorder = "border-blue-200/60";
+      } else if (isCall3) {
+          cellBg = index % 2 === 0 ? "bg-amber-50" : "bg-amber-100/60";
+          cellBorder = "border-amber-200/60";
       }
 
       const borderRight = (cellIndex === 1 || cellIndex === 3 || cellIndex === 5) ? "border-r" : "";
@@ -242,68 +176,38 @@ function renderGrid(container, scriptList, state) {
         const strikethroughClass = isActive ? '' : 'line-through opacity-50';
         const formattedTime = new Date(signalData.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         
-        const now = Date.now();
-        const animationDuration = isCall1 ? 3000 : 15000;
-        const isStillNew = signalData.newSince && now - signalData.newSince < animationDuration && isActive;
-        const animationClass = (isStillNew && !isCurrentlyFlashing) ? (isCall1 ? "long-term-highlight" : "highlight-signal") : "";
-        
-        const count = signalData.count || 0;
-        const countDisplay = (count > 0 && isActive && isCall1) ? `<span class="${getCounterClass(count, isBuy)}">${count}</span>` : '';
         const tooltipCount = signalData.count ? ` | Count: <span class="font-bold">${signalData.count}</span>` : '';
         const status = isActive ? '' : ' (Inactive)';
 
-        cellClasses += ` has-tooltip relative ${animationClass}`;
+        cellClasses += ` has-tooltip relative`;
         
-        // --- CONTENT SPLIT LOGIC ---
-        if (isCall1) {
-            // == CALL 1 STYLE ==
-            const activeGreen = 'text-green-700';
-            const activeRed = 'text-red-700';
-            const colorClass = isBuy 
-              ? (isActive ? activeGreen : 'text-gray-400')
-              : (isActive ? activeRed : 'text-gray-400');
-            
-            cellContent = `
-              <div class="${colorClass} font-extrabold text-sm flex justify-center items-center w-full">
-                ${countDisplay}
-                <span class="${strikethroughClass}">${signalData.price}</span>
-              </div>
-              <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
-                Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
-              </div>
-            `;
-        } else {
-            // == CALL 2 & CALL 3 STYLE ==
-            let signalText = isBuy ? "BUY" : "SELL";
-            let activeColor = isBuy ? 'text-green-600' : 'text-red-600';
-            let priceColor = isActive ? 'text-gray-500' : 'text-gray-400';
-            let colorClass = isActive ? activeColor : 'text-gray-400';
-            
-            cellContent = `
-              <div class="flex flex-col justify-center items-center ${strikethroughClass}">
-                <div class="${colorClass} font-bold text-sm flex justify-center items-center w-full">
-                  <span>${signalText}</span>
-                </div>
-                <div class="text-xs ${priceColor} mt-0.5">
-                  ${signalData.price}
-                </div>
-              </div>
-              <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
-                Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
-              </div>
-            `;
-        }
+        // All calls use same BUY/SELL + price format
+        let signalText = isBuy ? "BUY" : "SELL";
+        let activeColor = isBuy ? 'text-green-600' : 'text-red-600';
+        let priceColor = isActive ? 'text-gray-500' : 'text-gray-400';
+        let colorClass = isActive ? activeColor : 'text-gray-400';
+        
+        cellContent = `
+          <div class="flex flex-col justify-center items-center ${strikethroughClass}">
+            <div class="${colorClass} font-bold text-sm flex justify-center items-center w-full">
+              <span>${signalText}</span>
+            </div>
+            <div class="text-xs ${priceColor} mt-0.5">
+              ${signalData.price}
+            </div>
+          </div>
+          <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
+            Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
+          </div>
+        `;
       }
       rowHTML += `<div class="${cellClasses}">${cellContent}</div>`;
     });
 
     // Symbol Right
     rowHTML += `
-      <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-12 ${symbolFlashClass}">
-          <div class="flex items-center">
-              ${strongBadge}
-              <span class="ml-2">${symbol}</span>
-          </div>
+      <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-12">
+          <span>${symbol}</span>
       </div>`;
 
     rowHTML += `</div>`;
@@ -333,7 +237,7 @@ function connectWebSocket() {
         for (const symbol of [...data.scriptListLeft, ...data.scriptListRight]) {
           if (data.state[symbol]) {
               for (const key of SIGNAL_KEYS) { 
-                  const page2Key = key + '_page2';
+                  const page2Key = key.replace('_', '_page2_');
                   const signalData = data.state[symbol][page2Key];
                   if (signalData && signalData.newSince && Date.now() - signalData.newSince < 3000 && signalData.active !== false) {
                       newSignalKey = key;
