@@ -5,10 +5,16 @@ body {
 /* --- GRID CONFIGURATION --- */
 .grid-container {
   display: grid;
-  /* Columns: Mute | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Symbol */
-  grid-template-columns: 30px 2fr 1fr 1fr 1fr 1fr 2fr; 
+  /* Columns: Mute | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Call3 GO | Symbol */
+  grid-template-columns: 30px 1.5fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 1.5fr; 
   font-size: 0.8rem;
   align-items: center;
+}
+
+/* Page 2 grid with 6 signal columns */
+.page2 .grid-container {
+  /* Columns: Mute | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Call3 Buy | Call3 Sell | Symbol */
+  grid-template-columns: 30px 1.5fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 1.5fr;
 }
 
 /* --- ANIMATIONS --- */

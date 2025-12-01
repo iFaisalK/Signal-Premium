@@ -2,7 +2,7 @@ const gridLeft = document.getElementById("grid-left");
 const gridRight = document.getElementById("grid-right");
 const globalStopBtn = document.getElementById("global-stop-btn");
 const globalPauseBtn = document.getElementById("global-pause-btn");
-const SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call3_go"];
+const SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call3_buy", "call3_sell"];
 const FLASH_TIMEOUT_MS = 20 * 60 * 1000; // 20 Minutes in Milliseconds
 
 // --- STATE ---
@@ -11,7 +11,6 @@ let isGlobalPaused = false;
 const rowMuteTimestamps = {}; 
 const mutedSymbols = new Set();
 let lastData = null;
-let call3Mode = '15m'; // '15m' or '1h' 
 
 // --- Sound ---
 let audioUnlocked = false;
@@ -66,11 +65,6 @@ function toggleGlobalPause() {
     renderUI();
 }
 
-function toggleCall3Mode() {
-    call3Mode = call3Mode === '15m' ? '1h' : '15m';
-    renderUI();
-}
-
 function toggleSymbolMute(symbol) {
     if (mutedSymbols.has(symbol)) mutedSymbols.delete(symbol);
     else mutedSymbols.add(symbol);
@@ -108,30 +102,6 @@ function getCounterClass(count, isBuy) {
 
 // --- RENDER ---
 function createHeader() {
-  // Count active GO signals
-  let goCount = 0;
-  let goSymbols = [];
-  if (lastData && lastData.state) {
-    Object.keys(lastData.state).forEach(symbol => {
-      const call3Key = call3Mode === '15m' ? 'call3_go' : 'call3_1h';
-      const call3Data = lastData.state[symbol]?.[call3Key];
-      if (call3Data && call3Data.active && call3Data.signalType === 'buy') {
-        const now = Date.now();
-        const signalTime = typeof call3Data.time === 'number' ? call3Data.time : Date.parse(call3Data.time);
-        const timeSinceSignal = now - signalTime;
-        const timeoutMs = call3Mode === '15m' ? (15 * 60 * 1000) : (60 * 60 * 1000);
-        // Only count if not expired (for STOP signals)
-        if (call3Data.signalType === 'buy' || timeSinceSignal <= timeoutMs) {
-          goCount++;
-          goSymbols.push(symbol);
-        }
-      }
-    });
-  }
-  
-  const goCountDisplay = goCount > 0 ? `<span class="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full ml-1" title="Active GO signals: ${goSymbols.join(', ')}">${goCount}</span>` : '';
-  const modeToggle = `<button onclick="toggleCall3Mode()" class="text-xs px-2 py-1 bg-white border border-blue-300 rounded ml-2 hover:bg-blue-50" title="Switch between 15min and 1hour signals">${call3Mode}</button>`;
-  
   return `
     <div class="grid-container text-xs font-semibold text-center text-gray-500 sticky top-0 bg-white z-10 shadow-sm border-b border-gray-300">
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50">🔔</div>
@@ -139,16 +109,15 @@ function createHeader() {
       
       <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 1</div>
       <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 2</div>
-      <div class="p-2 border-b border-r border-gray-200 bg-blue-100 text-blue-600 row-span-2 flex items-center justify-center font-bold flex-col">
-        <div>CALL 3${goCountDisplay}</div>
-        ${modeToggle}
-      </div>
+      <div class="p-2 border-b border-r border-gray-200 col-span-2 bg-blue-100 text-blue-600">Call 3</div>
       <div class="p-2 row-span-2 flex items-center justify-end pr-4 bg-gray-50">Symbol</div>
       
       <div class="p-2 border-amber-200 text-green-700 bg-amber-100">Buy</div>
       <div class="p-2 border-amber-200 text-red-700 bg-amber-100">Sell</div>
       <div class="p-2 border-gray-200 text-green-600 bg-gray-50">Buy</div>
-      <div class="p-2 border-r border-gray-200 text-red-600 bg-gray-50">Sell</div>
+      <div class="p-2 border-gray-200 text-red-600 bg-gray-50">Sell</div>
+      <div class="p-2 border-gray-200 text-green-600 bg-blue-50">Buy</div>
+      <div class="p-2 border-r border-gray-200 text-red-600 bg-blue-50">Sell</div>
     </div>
   `;
 }
@@ -161,10 +130,10 @@ function renderGrid(container, scriptList, state) {
     let rowBaseClass = index % 2 === 0 ? "bg-white" : "bg-gray-50";
     
     // --- MATCHING LOGIC ---
-    const c1Buy = symbolState['call1_buy']?.active;
-    const c1Sell = symbolState['call1_sell']?.active;
-    const c2Buy = symbolState['call2_buy']?.active;
-    const c2Sell = symbolState['call2_sell']?.active;
+    const c1Buy = symbolState['call1_buy_page2']?.active;
+    const c1Sell = symbolState['call1_sell_page2']?.active;
+    const c2Buy = symbolState['call2_buy_page2']?.active;
+    const c2Sell = symbolState['call2_sell_page2']?.active;
 
     let symbolFlashClass = ""; 
     let strongBadge = "";
@@ -177,11 +146,11 @@ function renderGrid(container, scriptList, state) {
         let t1 = 0; t2 = 0;
         
         if (c1Buy) {
-            t1 = symbolState['call1_buy'].trendStartTime || symbolState['call1_buy'].time || 0;
-            t2 = symbolState['call2_buy'].trendStartTime || symbolState['call2_buy'].time || 0;
+            t1 = symbolState['call1_buy_page2'].trendStartTime || symbolState['call1_buy_page2'].time || 0;
+            t2 = symbolState['call2_buy_page2'].trendStartTime || symbolState['call2_buy_page2'].time || 0;
         } else {
-            t1 = symbolState['call1_sell'].trendStartTime || symbolState['call1_sell'].time || 0;
-            t2 = symbolState['call2_sell'].trendStartTime || symbolState['call2_sell'].time || 0;
+            t1 = symbolState['call1_sell_page2'].trendStartTime || symbolState['call1_sell_page2'].time || 0;
+            t2 = symbolState['call2_sell_page2'].trendStartTime || symbolState['call2_sell_page2'].time || 0;
         }
         
         t1 = (typeof t1 === 'number') ? t1 : (isNaN(Date.parse(t1)) ? 0 : Date.parse(t1));
@@ -248,20 +217,13 @@ function renderGrid(container, scriptList, state) {
       </div>`;
 
     SIGNAL_KEYS.forEach((key, cellIndex) => {
-      let signalData = null;
-      if (key === "call3_go") {
-        // Use the selected Call 3 mode
-        const call3Key = call3Mode === '15m' ? 'call3_go' : 'call3_1h';
-        signalData = symbolState ? symbolState[call3Key] : null;
-      } else {
-        signalData = symbolState ? symbolState[key] : null;
-      }
-      
+      const page2Key = key + '_page2';
+      const signalData = symbolState ? symbolState[page2Key] : null;
       const isCall1 = key.startsWith("call1");
       
       let cellBg = "";
       let cellBorder = "border-gray-200"; 
-      const isCall3 = key === "call3_go";
+      const isCall3 = key.startsWith("call3");
       if (isCall1) {
           cellBg = index % 2 === 0 ? "bg-amber-50" : "bg-amber-100/60";
           cellBorder = "border-amber-200/60";
@@ -270,7 +232,7 @@ function renderGrid(container, scriptList, state) {
           cellBorder = "border-blue-200/60";
       }
 
-      const borderRight = (cellIndex === 1 || cellIndex === 3 || cellIndex === 4) ? "border-r" : "";
+      const borderRight = (cellIndex === 1 || cellIndex === 3 || cellIndex === 5) ? "border-r" : "";
       let cellClasses = `p-2 ${borderRight} ${cellBorder} text-xs transition-colors duration-500 h-12 flex items-center justify-center ${cellBg}`;
 
       let cellContent = "";
@@ -294,8 +256,7 @@ function renderGrid(container, scriptList, state) {
         
         // --- CONTENT SPLIT LOGIC ---
         if (isCall1) {
-            // == CALL 1 STYLE (From your snippet) ==
-            // Price ONLY. Colored Text. No "Buy/Sell" text.
+            // == CALL 1 STYLE ==
             const activeGreen = 'text-green-700';
             const activeRed = 'text-red-700';
             const colorClass = isBuy 
@@ -311,38 +272,8 @@ function renderGrid(container, scriptList, state) {
                 Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
               </div>
             `;
-        } else if (isCall3) {
-            // == CALL 3 STYLE (GO/STOP Signal) ==
-            const signalType = signalData.signalType;
-            const isGO = signalType === 'buy';
-            const isSTOP = signalType === 'sell';
-            
-            // STOP signals disappear after timeout (15min or 1h based on mode)
-            const now = Date.now();
-            const signalTime = typeof signalData.time === 'number' ? signalData.time : Date.parse(signalData.time);
-            const timeSinceSignal = now - signalTime;
-            const timeoutMs = call3Mode === '15m' ? (15 * 60 * 1000) : (60 * 60 * 1000);
-            const stopExpired = isSTOP && timeSinceSignal > timeoutMs;
-            
-            if (stopExpired) {
-                // Don't show anything if STOP has expired
-                cellContent = '';
-            } else {
-                const displayText = isGO ? 'GO!' : 'STOP!';
-                const bgClass = isGO ? 'bg-green-500' : 'bg-red-500';
-                
-                cellContent = `
-                  <div class="${bgClass} text-white font-bold text-xl flex items-center justify-center w-full h-full ${strikethroughClass}">
-                    <span>${displayText}</span>
-                  </div>
-                  <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
-                    Time: <span class="font-bold">${formattedTime}</span>${status}
-                  </div>
-                `;
-            }
         } else {
-            // == CALL 2 STYLE (Standard Dashboard) ==
-            // "BUY"/"SELL" Text + Price Subtext
+            // == CALL 2 & CALL 3 STYLE ==
             let signalText = isBuy ? "BUY" : "SELL";
             let activeColor = isBuy ? 'text-green-600' : 'text-red-600';
             let priceColor = isActive ? 'text-gray-500' : 'text-gray-400';
@@ -402,7 +333,8 @@ function connectWebSocket() {
         for (const symbol of [...data.scriptListLeft, ...data.scriptListRight]) {
           if (data.state[symbol]) {
               for (const key of SIGNAL_KEYS) { 
-                  const signalData = data.state[symbol][key];
+                  const page2Key = key + '_page2';
+                  const signalData = data.state[symbol][page2Key];
                   if (signalData && signalData.newSince && Date.now() - signalData.newSince < 3000 && signalData.active !== false) {
                       newSignalKey = key;
                       break;

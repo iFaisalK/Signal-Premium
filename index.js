@@ -41,7 +41,7 @@ const STATIC_SYMBOLS_RIGHT = [
 ]; // 24 symbols
 
 const ALL_SYMBOLS = [...STATIC_SYMBOLS_LEFT, ...STATIC_SYMBOLS_RIGHT];
-const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell"];
+const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call3_go", "call3_1h", "call1_buy_page2", "call1_sell_page2", "call2_buy_page2", "call2_sell_page2", "call3_buy_page2", "call3_sell_page2"];
 
 // --- State Management ---
 let signalState = {};
@@ -52,9 +52,22 @@ const createInitialSymbolState = () => ({
     call1_sell: null,
     call2_buy: null,
     call2_sell: null,
+    call3_go: null,
+    call3_1h: null,
+    call1_buy_page2: null,
+    call1_sell_page2: null,
+    call2_buy_page2: null,
+    call2_sell_page2: null,
+    call3_buy_page2: null,
+    call3_sell_page2: null,
     // Track last signal for EACH call separately
     _lastCall1Key: null,
-    _lastCall2Key: null
+    _lastCall2Key: null,
+    _lastCall3Key: null,
+    _lastCall3_1hKey: null,
+    _lastCall1Page2Key: null,
+    _lastCall2Page2Key: null,
+    _lastCall3Page2Key: null
 });
 
 // Function to initialize the state for all symbols
@@ -130,17 +143,37 @@ app.post("/webhook", async (req, res) => {
   let term;
   if (indicator === 1) term = "call1";
   else if (indicator === 2) term = "call2";
+  else if (indicator === 3) term = "call3";
+  else if (indicator === 4) term = "call3_1h";
+  else if (indicator === 5) term = "call1_page2";
+  else if (indicator === 6) term = "call2_page2";
+  else if (indicator === 7) term = "call3_page2";
   else return res.status(400).send("Invalid indicator value.");
 
-  // Validate signal type
+  // Validate signal type and handle call3 special case
   if (signal !== "buy" && signal !== "sell") {
     return res.status(400).send("Invalid signal type.");
   }
 
-  const stateKey = `${term}_${signal}`; // e.g., "call1_buy"
+  let stateKey;
+  if (term === "call3") {
+    stateKey = "call3_go"; // Both buy and sell map to call3_go
+  } else if (term === "call3_1h") {
+    stateKey = "call3_1h"; // Both buy and sell map to call3_1h
+  } else {
+    stateKey = `${term}_${signal}`; // e.g., "call1_buy"
+  }
   
   // Determine which 'last key' tracker to use based on the term
-  const lastKeyTracker = term === "call1" ? "_lastCall1Key" : "_lastCall2Key";
+  let lastKeyTracker;
+  if (term === "call1") lastKeyTracker = "_lastCall1Key";
+  else if (term === "call2") lastKeyTracker = "_lastCall2Key";
+  else if (term === "call3") lastKeyTracker = "_lastCall3Key";
+  else if (term === "call3_1h") lastKeyTracker = "_lastCall3_1hKey";
+  else if (term === "call1_page2") lastKeyTracker = "_lastCall1Page2Key";
+  else if (term === "call2_page2") lastKeyTracker = "_lastCall2Page2Key";
+  else if (term === "call3_page2") lastKeyTracker = "_lastCall3Page2Key";
+  
   const lastSignalKey = signalState[symbol][lastKeyTracker];
   let newCount = 1;
   
@@ -148,20 +181,29 @@ app.post("/webhook", async (req, res) => {
   let trendStartTime = Date.now();
 
   // --- COUNTER & STRIKETHROUGH LOGIC ---
-  if (lastSignalKey === stateKey) {
+  if (term === "call3" || term === "call3_1h") {
+      // Special handling for call3: only show STOP if GO was there before
+      if (signal === "sell") {
+        // Check if there was a previous GO signal
+        const existingSignal = signalState[symbol][stateKey];
+        if (!existingSignal || existingSignal.signalType !== "buy") {
+          // No previous GO signal, ignore this STOP
+          return res.status(200).send("STOP ignored - no previous GO signal");
+        }
+      }
+      newCount = 1;
+      // For call3, store the signal type (buy=GO, sell=STOP) in the data
+  } else if (lastSignalKey === stateKey) {
       // 1. SAME SIGNAL: Increment counter, keep active
-      // Keep the OLD trendStartTime because the trend hasn't changed
       const oldSignal = signalState[symbol][stateKey];
       newCount = (oldSignal?.count || 0) + 1;
       if (oldSignal && oldSignal.trendStartTime) {
           trendStartTime = oldSignal.trendStartTime;
       }
   } else {
-      // 2. NEW SIGNAL FOR THIS TERM: Reset count & deactivate ONLY the other signal in THIS term
+      // 2. NEW SIGNAL FOR THIS TERM: Reset count & deactivate other signal
       newCount = 1;
-      // trendStartTime is already Date.now(), which is correct for a new trend
       
-      // If term is 'call1' and signal is 'buy', deactivate 'call1_sell'
       const otherSignal = signal === "buy" ? "sell" : "buy";
       const otherKey = `${term}_${otherSignal}`;
       
@@ -171,18 +213,27 @@ app.post("/webhook", async (req, res) => {
   }
   
   // Update the new/current signal
-  signalState[symbol][stateKey] = {
-    ...(signalState[symbol][stateKey] || {}), // Keep existing props
+  const signalData = {
+    ...(signalState[symbol][stateKey] || {}),
     price,
     time,
-    newSince: Date.now(), // Updates on every "refresh" for flashing cell
+    newSince: Date.now(),
     count: newCount,
     active: true,
-    trendStartTime: trendStartTime // NEW: Persist the start time
+    trendStartTime: trendStartTime
   };
+  
+  // For call3, store the signal type for GO/STOP display
+  if (term === "call3" || term === "call3_1h") {
+    signalData.signalType = signal; // "buy" or "sell"
+  }
+  
+  signalState[symbol][stateKey] = signalData;
 
   // Update the correct tracker
-  signalState[symbol][lastKeyTracker] = stateKey;
+  if (lastKeyTracker) {
+    signalState[symbol][lastKeyTracker] = stateKey;
+  }
   // --- End Logic ---
 
   console.log(`✅ State updated for ${symbol}: ${stateKey} -> ${price} (Count: ${newCount})`);
