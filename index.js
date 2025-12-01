@@ -41,7 +41,7 @@ const STATIC_SYMBOLS_RIGHT = [
 ]; // 24 symbols
 
 const ALL_SYMBOLS = [...STATIC_SYMBOLS_LEFT, ...STATIC_SYMBOLS_RIGHT];
-const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call3_go", "call3_1h", "call1_page2_buy", "call1_page2_sell", "call2_page2_buy", "call2_page2_sell", "call3_page2_buy", "call3_page2_sell"];
+const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call2_1h", "call3_go", "call3_1h", "call1_page2_buy", "call1_page2_sell", "call2_page2_buy", "call2_page2_sell", "call3_page2_buy", "call3_page2_sell"];
 
 // --- State Management ---
 let signalState = {};
@@ -52,6 +52,7 @@ const createInitialSymbolState = () => ({
     call1_sell: null,
     call2_buy: null,
     call2_sell: null,
+    call2_1h: null,
     call3_go: null,
     call3_1h: null,
     call1_page2_buy: null,
@@ -63,6 +64,7 @@ const createInitialSymbolState = () => ({
     // Track last signal for EACH call separately
     _lastCall1Key: null,
     _lastCall2Key: null,
+    _lastCall2_1hKey: null,
     _lastCall3Key: null,
     _lastCall3_1hKey: null,
     _lastCall1Page2Key: null,
@@ -142,7 +144,8 @@ app.post("/webhook", async (req, res) => {
   // Map 'indicator' number to term string
   let term;
   if (indicator === 1) term = "call1";
-  else if (indicator === 2) term = "call2";
+  else if (indicator === 10) term = "call2"; // Changed from indicator 2 to 10
+  else if (indicator === 11) term = "call2_1h";
   else if (indicator === 3) term = "call3";
   else if (indicator === 4) term = "call3_1h";
   else if (indicator === 5) term = "call1_page2";
@@ -160,6 +163,8 @@ app.post("/webhook", async (req, res) => {
     stateKey = "call3_go"; // Both buy and sell map to call3_go
   } else if (term === "call3_1h") {
     stateKey = "call3_1h"; // Both buy and sell map to call3_1h
+  } else if (term === "call2_1h") {
+    stateKey = `call2_1h_${signal}`; // e.g., "call2_1h_buy"
   } else {
     stateKey = `${term}_${signal}`; // e.g., "call1_buy" or "call1_page2_buy"
   }
@@ -168,6 +173,7 @@ app.post("/webhook", async (req, res) => {
   let lastKeyTracker;
   if (term === "call1") lastKeyTracker = "_lastCall1Key";
   else if (term === "call2") lastKeyTracker = "_lastCall2Key";
+  else if (term === "call2_1h") lastKeyTracker = "_lastCall2_1hKey";
   else if (term === "call3") lastKeyTracker = "_lastCall3Key";
   else if (term === "call3_1h") lastKeyTracker = "_lastCall3_1hKey";
   else if (term === "call1_page2") lastKeyTracker = "_lastCall1Page2Key";

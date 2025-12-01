@@ -11,7 +11,8 @@ let isGlobalPaused = false;
 const rowMuteTimestamps = {}; 
 const mutedSymbols = new Set();
 let lastData = null;
-let call3Mode = '15m'; // '15m' or '1h' 
+let call3Mode = '15m'; // '15m' or '1h'
+let call2Mode = '15m'; // '15m' or '1h' 
 
 // --- Sound ---
 let audioUnlocked = false;
@@ -68,6 +69,11 @@ function toggleGlobalPause() {
 
 function toggleCall3Mode() {
     call3Mode = call3Mode === '15m' ? '1h' : '15m';
+    renderUI();
+}
+
+function toggleCall2Mode() {
+    call2Mode = call2Mode === '15m' ? '1h' : '15m';
     renderUI();
 }
 
@@ -130,7 +136,8 @@ function createHeader() {
   }
   
   const goCountDisplay = goCount > 0 ? `<span class="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full ml-1" title="Active GO signals: ${goSymbols.join(', ')}">${goCount}</span>` : '';
-  const modeToggle = `<button onclick="toggleCall3Mode()" class="text-xs px-2 py-1 bg-white border border-blue-300 rounded ml-2 hover:bg-blue-50" title="Switch between 15min and 1hour signals">${call3Mode}</button>`;
+  const call2ModeToggle = `<button onclick="toggleCall2Mode()" class="text-xs px-2 py-1 bg-white border border-gray-300 rounded ml-2 hover:bg-gray-50" title="Switch between 15min and 1hour signals">${call2Mode}</button>`;
+  const call3ModeToggle = `<button onclick="toggleCall3Mode()" class="text-xs px-2 py-1 bg-white border border-blue-300 rounded ml-2 hover:bg-blue-50" title="Switch between 15min and 1hour signals">${call3Mode}</button>`;
   
   return `
     <div class="grid-container text-xs font-semibold text-center text-gray-500 sticky top-0 bg-white z-10 shadow-sm border-b border-gray-300">
@@ -138,10 +145,13 @@ function createHeader() {
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-gray-50">Symbol</div>
       
       <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 1</div>
-      <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 2</div>
+      <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600 flex items-center justify-center font-bold flex-col">
+        <div>Call 2</div>
+        ${call2ModeToggle}
+      </div>
       <div class="p-2 border-b border-r border-gray-200 bg-blue-100 text-blue-600 row-span-2 flex items-center justify-center font-bold flex-col">
         <div>CALL 3${goCountDisplay}</div>
-        ${modeToggle}
+        ${call3ModeToggle}
       </div>
       <div class="p-2 row-span-2 flex items-center justify-end pr-4 bg-gray-50">Symbol</div>
       
@@ -253,6 +263,10 @@ function renderGrid(container, scriptList, state) {
         // Use the selected Call 3 mode
         const call3Key = call3Mode === '15m' ? 'call3_go' : 'call3_1h';
         signalData = symbolState ? symbolState[call3Key] : null;
+      } else if (key.startsWith("call2")) {
+        // Use the selected Call 2 mode
+        const call2Key = call2Mode === '15m' ? key : `call2_1h_${key.split('_')[1]}`;
+        signalData = symbolState ? symbolState[call2Key] : null;
       } else {
         signalData = symbolState ? symbolState[key] : null;
       }
