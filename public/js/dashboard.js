@@ -11,8 +11,9 @@ let isGlobalPaused = false;
 const rowMuteTimestamps = {}; 
 const mutedSymbols = new Set();
 let lastData = null;
-let call3Mode = '15m'; // '15m' or '1h'
-let call2Mode = '15m'; // '15m' or '1h' 
+let call1Mode = '15m'; // '15m' or '1h'
+let call2Mode = '15m'; // '15m' or '1h'
+let call3Mode = '15m'; // '15m' or '1h' 
 
 // --- Sound ---
 let audioUnlocked = false;
@@ -67,13 +68,18 @@ function toggleGlobalPause() {
     renderUI();
 }
 
-function toggleCall3Mode() {
-    call3Mode = call3Mode === '15m' ? '1h' : '15m';
+function toggleCall1Mode() {
+    call1Mode = call1Mode === '15m' ? '1h' : '15m';
     renderUI();
 }
 
 function toggleCall2Mode() {
     call2Mode = call2Mode === '15m' ? '1h' : '15m';
+    renderUI();
+}
+
+function toggleCall3Mode() {
+    call3Mode = call3Mode === '15m' ? '1h' : '15m';
     renderUI();
 }
 
@@ -98,18 +104,8 @@ function renderUI() {
 
 function getCounterClass(count, isBuy) {
   if (!count || count <= 0) return '';
-  const baseClasses = "flex items-center justify-center w-4 h-4 rounded-full text-white text-xs font-bold mr-1.5 shadow-sm";
-  let colorClass = '';
-  if (isBuy) {
-    if (count < 3) colorClass = 'bg-green-500';
-    else if (count < 6) colorClass = 'bg-green-600';
-    else colorClass = 'bg-green-800';
-  } else {
-    if (count < 3) colorClass = 'bg-red-500';
-    else if (count < 6) colorClass = 'bg-red-600';
-    else colorClass = 'bg-red-800';
-  }
-  return `${baseClasses} ${colorClass}`;
+  const bgColor = isBuy ? '#38CB6E' : '#F15656';
+  return `flex items-center justify-center w-6 h-6 rounded-full text-white text-sm font-bold mr-1.5" style="background-color: ${bgColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.3);`;
 }
 
 // --- RENDER ---
@@ -136,6 +132,7 @@ function createHeader() {
   }
   
   const goCountDisplay = goCount > 0 ? `<span class="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full ml-1" title="Active GO signals: ${goSymbols.join(', ')}">${goCount}</span>` : '';
+  const call1ModeToggle = `<button onclick="toggleCall1Mode()" class="text-xs px-2 py-1 bg-gray-800 text-white border border-gray-700 rounded ml-2 hover:bg-gray-700" title="Switch between 15min and 1hour signals">${call1Mode}</button>`;
   const call2ModeToggle = `<button onclick="toggleCall2Mode()" class="text-xs px-2 py-1 bg-white border border-gray-300 rounded ml-2 hover:bg-gray-50" title="Switch between 15min and 1hour signals">${call2Mode}</button>`;
   const call3ModeToggle = `<button onclick="toggleCall3Mode()" class="text-xs px-2 py-1 bg-white border border-blue-300 rounded ml-2 hover:bg-blue-50" title="Switch between 15min and 1hour signals">${call3Mode}</button>`;
   
@@ -144,7 +141,10 @@ function createHeader() {
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50">🔔</div>
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-gray-50">Symbol</div>
       
-      <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 1</div>
+      <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider flex items-center justify-center flex-col">
+        <div>CALL 1</div>
+        ${call1ModeToggle}
+      </div>
       <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600 flex items-center justify-center font-bold flex-col">
         <div>Call 2</div>
         ${call2ModeToggle}
@@ -171,27 +171,51 @@ function renderGrid(container, scriptList, state) {
     let rowBaseClass = index % 2 === 0 ? "bg-white" : "bg-gray-50";
     
     // --- MATCHING LOGIC ---
-    const c1Buy = symbolState['call1_buy']?.active;
-    const c1Sell = symbolState['call1_sell']?.active;
-    const c2Buy = symbolState['call2_buy']?.active;
-    const c2Sell = symbolState['call2_sell']?.active;
+    const c1Buy_15m = symbolState['call1_buy']?.active;
+    const c1Sell_15m = symbolState['call1_sell']?.active;
+    const c2Buy_15m = symbolState['call2_buy']?.active;
+    const c2Sell_15m = symbolState['call2_sell']?.active;
+    
+    const c1Buy_1h = symbolState['call1_1h_buy']?.active;
+    const c1Sell_1h = symbolState['call1_1h_sell']?.active;
+    const c2Buy_1h = symbolState['call2_1h_buy']?.active;
+    const c2Sell_1h = symbolState['call2_1h_sell']?.active;
 
     let symbolFlashClass = ""; 
     let strongBadge = "";
     let matchTime = 0;
     let isCurrentlyFlashing = false;
+    let flashTimeframe = "";
     
-    let isMatch = (c1Buy && c2Buy) || (c1Sell && c2Sell);
+    let isMatch_15m = (c1Buy_15m && c2Buy_15m) || (c1Sell_15m && c2Sell_15m);
+    let isMatch_1h = (c1Buy_1h && c2Buy_1h) || (c1Sell_1h && c2Sell_1h);
+    
+    let isMatch = isMatch_15m || isMatch_1h;
+    let c1Buy, c1Sell;
+    
+    if (isMatch_15m) {
+      flashTimeframe = "15m";
+      c1Buy = c1Buy_15m;
+      c1Sell = c1Sell_15m;
+    } else if (isMatch_1h) {
+      flashTimeframe = "1h";
+      c1Buy = c1Buy_1h;
+      c1Sell = c1Sell_1h;
+    }
     
     if (isMatch) {
         let t1 = 0; t2 = 0;
         
         if (c1Buy) {
-            t1 = symbolState['call1_buy'].trendStartTime || symbolState['call1_buy'].time || 0;
-            t2 = symbolState['call2_buy'].trendStartTime || symbolState['call2_buy'].time || 0;
+            const c1Key = flashTimeframe === "15m" ? 'call1_buy' : 'call1_1h_buy';
+            const c2Key = flashTimeframe === "15m" ? 'call2_buy' : 'call2_1h_buy';
+            t1 = symbolState[c1Key]?.trendStartTime || symbolState[c1Key]?.time || 0;
+            t2 = symbolState[c2Key]?.trendStartTime || symbolState[c2Key]?.time || 0;
         } else {
-            t1 = symbolState['call1_sell'].trendStartTime || symbolState['call1_sell'].time || 0;
-            t2 = symbolState['call2_sell'].trendStartTime || symbolState['call2_sell'].time || 0;
+            const c1Key = flashTimeframe === "15m" ? 'call1_sell' : 'call1_1h_sell';
+            const c2Key = flashTimeframe === "15m" ? 'call2_sell' : 'call2_1h_sell';
+            t1 = symbolState[c1Key]?.trendStartTime || symbolState[c1Key]?.time || 0;
+            t2 = symbolState[c2Key]?.trendStartTime || symbolState[c2Key]?.time || 0;
         }
         
         t1 = (typeof t1 === 'number') ? t1 : (isNaN(Date.parse(t1)) ? 0 : Date.parse(t1));
@@ -225,6 +249,7 @@ function renderGrid(container, scriptList, state) {
         } else if (isExpired && isStrong) {
             // --- PERSISTENCE LOGIC (After 20 mins, Strong Only) ---
             // Static, intense background with white text
+            isCurrentlyFlashing = true; // Show timeframe badge for static STRONG too
             if (c1Buy) symbolFlashClass = "static-green";
             else symbolFlashClass = "static-red";
         }
@@ -248,11 +273,13 @@ function renderGrid(container, scriptList, state) {
       </div>`;
 
     // 1. Symbol Name (Left)
+    const timeframeBadge = isCurrentlyFlashing ? `<span class="text-xs px-1.5 py-0.5 bg-gray-700 text-white rounded ml-2 opacity-80">${flashTimeframe}</span>` : '';
     rowHTML += `
       <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-between pl-4 h-12 ${symbolFlashClass}">
           <div class="flex items-center">
               <span>${symbol}</span>
               ${strongBadge}
+              ${timeframeBadge}
           </div>
           ${pauseBtn}
       </div>`;
@@ -267,6 +294,10 @@ function renderGrid(container, scriptList, state) {
         // Use the selected Call 2 mode
         const call2Key = call2Mode === '15m' ? key : `call2_1h_${key.split('_')[1]}`;
         signalData = symbolState ? symbolState[call2Key] : null;
+      } else if (key.startsWith("call1")) {
+        // Use the selected Call 1 mode
+        const call1Key = call1Mode === '15m' ? key : `call1_1h_${key.split('_')[1]}`;
+        signalData = symbolState ? symbolState[call1Key] : null;
       } else {
         signalData = symbolState ? symbolState[key] : null;
       }
@@ -288,10 +319,9 @@ function renderGrid(container, scriptList, state) {
       let cellClasses = `p-2 ${borderRight} ${cellBorder} text-xs transition-colors duration-500 h-12 flex items-center justify-center ${cellBg}`;
 
       let cellContent = "";
-      if (signalData) {
+      if (signalData && signalData.active !== false) {
         const isBuy = key.includes("buy");
         const isActive = signalData.active !== false;
-        const strikethroughClass = isActive ? '' : 'line-through opacity-50';
         const formattedTime = new Date(signalData.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         
         const now = Date.now();
@@ -319,7 +349,7 @@ function renderGrid(container, scriptList, state) {
             cellContent = `
               <div class="${colorClass} font-extrabold text-sm flex justify-center items-center w-full">
                 ${countDisplay}
-                <span class="${strikethroughClass}">${signalData.price}</span>
+                <span>${signalData.price}</span>
               </div>
               <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
                 Time: <span class="font-bold">${formattedTime}</span>${tooltipCount}${status}
@@ -346,7 +376,7 @@ function renderGrid(container, scriptList, state) {
                 const bgClass = isGO ? 'bg-green-500' : 'bg-red-500';
                 
                 cellContent = `
-                  <div class="${bgClass} text-white font-bold text-xl flex items-center justify-center w-full h-full ${strikethroughClass}">
+                  <div class="${bgClass} text-white font-bold text-xl flex items-center justify-center w-full h-full">
                     <span>${displayText}</span>
                   </div>
                   <div class="tooltip absolute bottom-full mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-lg z-20">
@@ -356,17 +386,14 @@ function renderGrid(container, scriptList, state) {
             }
         } else {
             // == CALL 2 STYLE (Standard Dashboard) ==
-            // "BUY"/"SELL" Text + Price Subtext
-            let signalText = isBuy ? "BUY" : "SELL";
-            let activeColor = isBuy ? 'text-green-600' : 'text-red-600';
+            // Big Diamond + Price Subtext
+            let diamond = isBuy ? "◆" : "◆";
+            let diamondStyle = isBuy ? 'color: #38CB6E;' : 'color: #F15656;';
             let priceColor = isActive ? 'text-gray-500' : 'text-gray-400';
-            let colorClass = isActive ? activeColor : 'text-gray-400';
             
             cellContent = `
-              <div class="flex flex-col justify-center items-center ${strikethroughClass}">
-                <div class="${colorClass} font-bold text-sm flex justify-center items-center w-full">
-                  <span>${signalText}</span>
-                </div>
+              <div class="flex flex-col justify-center items-center">
+                <div class="text-2xl" style="${diamondStyle}">${diamond}</div>
                 <div class="text-xs ${priceColor} mt-0.5">
                   ${signalData.price}
                 </div>
