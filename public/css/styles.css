@@ -6,7 +6,7 @@ body {
 .grid-container {
   display: grid;
   /* Columns: Mute | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Call3 GO | Symbol */
-  grid-template-columns: 30px 1.5fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 1.5fr; 
+  grid-template-columns: 30px 1.2fr 0.7fr 0.7fr 0.7fr 0.7fr 0.6fr 1.2fr; 
   font-size: 0.8rem;
   align-items: center;
 }

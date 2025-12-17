@@ -238,8 +238,7 @@ function renderGrid(container, scriptList, state) {
 
         // "STRONG" Badge Logic
         if (isStrong) {
-            const badgeColor = c1Buy ? "badge-buy" : "badge-sell";
-            strongBadge = `<span class="strong-badge ${badgeColor}">STRONG</span>`;
+            strongBadge = `<span class="ml-1" title="Strong signal">🟡</span>`;
         }
 
         if (shouldFlash) {
@@ -275,16 +274,16 @@ function renderGrid(container, scriptList, state) {
     // 1. Symbol Name (Left)
     const timeframeBadge = isCurrentlyFlashing ? `<span class="text-xs px-1.5 py-0.5 bg-gray-700 text-white rounded ml-2 opacity-80">${flashTimeframe}</span>` : '';
     rowHTML += `
-      <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-between pl-4 h-12 ${symbolFlashClass}">
+      <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-12 ${symbolFlashClass}">
           <div class="flex items-center">
               <span>${symbol}</span>
               ${strongBadge}
               ${timeframeBadge}
           </div>
-          ${pauseBtn}
       </div>`;
 
-    SIGNAL_KEYS.forEach((key, cellIndex) => {
+    // Render Call signals
+    SIGNAL_KEYS.slice(0, 5).forEach((key, cellIndex) => {
       let signalData = null;
       if (key === "call3_go") {
         // Use the selected Call 3 mode

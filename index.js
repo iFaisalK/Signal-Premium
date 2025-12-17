@@ -41,7 +41,7 @@ const STATIC_SYMBOLS_RIGHT = [
 ]; // 24 symbols
 
 const ALL_SYMBOLS = [...STATIC_SYMBOLS_LEFT, ...STATIC_SYMBOLS_RIGHT];
-const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call1_1h", "call2_buy", "call2_sell", "call2_1h", "call3_go", "call3_1h", "call1_page2_buy", "call1_page2_sell", "call2_page2_buy", "call2_page2_sell", "call3_page2_buy", "call3_page2_sell"];
+const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call1_1h", "call2_buy", "call2_sell", "call2_1h", "call3_go", "call3_1h", "call1_page2_buy", "call1_page2_sell", "call2_page2_buy", "call2_page2_sell", "call3_page2_buy", "call3_page2_sell", "orb_5m", "orb_15m", "orb_1h"];
 
 // --- State Management ---
 let signalState = {};
@@ -62,6 +62,9 @@ const createInitialSymbolState = () => ({
     call2_page2_sell: null,
     call3_page2_buy: null,
     call3_page2_sell: null,
+    orb_5m: null,
+    orb_15m: null,
+    orb_1h: null,
     // Track last signal for EACH call separately
     _lastCall1Key: null,
     _lastCall1_1hKey: null,
@@ -132,6 +135,56 @@ const interval = setInterval(() => {
 
 
 // --- API Endpoints ---
+app.post("/orb", async (req, res) => {
+  const { symbol, type, high, low, time } = req.body;
+
+  // Basic Validation
+  if (!symbol || !type || !high || !low || !time) {
+    return res.status(400).send("Invalid ORB data. Missing fields.");
+  }
+  if (!signalState[symbol]) {
+    return res.status(400).send("Symbol is not tracked.");
+  }
+
+  // Map type to ORB key
+  let orbKey;
+  if (type === "5min_ORB") orbKey = "orb_5m";
+  else if (type === "15min_ORB") orbKey = "orb_15m";
+  else if (type === "60min_ORB") orbKey = "orb_1h";
+  else return res.status(400).send("Invalid ORB type.");
+
+  // Update ORB data
+  signalState[symbol][orbKey] = {
+    high,
+    low,
+    time,
+    newSince: Date.now()
+  };
+
+  console.log(`✅ ORB updated for ${symbol}: ${orbKey} -> H:${high} L:${low}`);
+
+  // Persist to DynamoDB
+  try {
+    const ttl_timestamp = Math.floor(Date.now() / 1000) + 15 * 24 * 60 * 60;
+    const params = {
+      TableName: tableName,
+      Item: {
+        symbol: { S: symbol },
+        stateData: { S: JSON.stringify(signalState[symbol]) },
+        lastUpdated: { S: new Date().toISOString() },
+        ttl: { N: ttl_timestamp.toString() },
+      },
+    };
+    await dynamoDBClient.send(new PutItemCommand(params));
+    console.log(`💾 Persisted ORB state for ${symbol} to DynamoDB.`);
+  } catch (dbError) {
+    console.error("🔥 DynamoDB Put Error:", dbError);
+  }
+
+  broadcastState();
+  res.status(200).send("ORB received!");
+});
+
 app.post("/webhook", async (req, res) => {
   const { symbol, signal, indicator, price, time } = req.body;
 
