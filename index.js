@@ -45,6 +45,7 @@ const ALL_SIGNAL_KEYS = ["call1_buy", "call1_sell", "call1_1h", "call2_buy", "ca
 
 // --- State Management ---
 let signalState = {};
+let priceState = {};
 
 // Function to create a clean state for one symbol
 const createInitialSymbolState = () => ({
@@ -118,6 +119,11 @@ wss.on("connection", (ws) => {
     scriptListLeft: STATIC_SYMBOLS_LEFT,
     scriptListRight: STATIC_SYMBOLS_RIGHT,
   }));
+  
+  // Send all price data
+  Object.values(priceState).forEach(priceData => {
+    ws.send(JSON.stringify(priceData));
+  });
 
   ws.on("close", () => {
     console.log("👋 Client disconnected");
@@ -183,6 +189,27 @@ app.post("/orb", async (req, res) => {
 
   broadcastState();
   res.status(200).send("ORB received!");
+});
+
+app.post("/price", async (req, res) => {
+  const { symbol, open_price, current_price, change_percent, time } = req.body;
+
+  if (!symbol || change_percent === undefined) {
+    return res.status(400).send("Invalid price data.");
+  }
+
+  const priceData = { symbol, open_price, current_price, change_percent, time };
+  priceState[symbol] = priceData;
+  
+  // Broadcast to all connected clients
+  for (const client of wss.clients) {
+    if (client.readyState === client.OPEN) {
+      client.send(JSON.stringify(priceData));
+    }
+  }
+
+  console.log(`📊 Price update: ${symbol} ${change_percent >= 0 ? '+' : ''}${change_percent}%`);
+  res.status(200).send("Price received!");
 });
 
 app.post("/webhook", async (req, res) => {

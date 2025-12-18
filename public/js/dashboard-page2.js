@@ -11,6 +11,7 @@ let isGlobalPaused = false;
 const rowMuteTimestamps = {}; 
 const mutedSymbols = new Set();
 let lastData = null;
+const priceData = {};
 
 // --- Sound ---
 let audioUnlocked = false;
@@ -144,9 +145,14 @@ function renderGrid(container, scriptList, state) {
       </div>`;
 
     // 1. Symbol Name (Left)
+    const changePercent = priceData[symbol]?.change_percent;
+    const trendArrow = changePercent !== undefined ? `<span class="material-symbols-outlined ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'} text-lg mr-1">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
+    const percentBadge = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded ml-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
     rowHTML += `
       <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-12">
+          ${trendArrow}
           <span>${symbol}</span>
+          ${percentBadge}
       </div>`;
 
     SIGNAL_KEYS.forEach((key, cellIndex) => {
@@ -205,8 +211,12 @@ function renderGrid(container, scriptList, state) {
     });
 
     // Symbol Right
+    const trendArrowRight = changePercent !== undefined ? `<span class="material-symbols-outlined ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'} text-lg mr-1">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
+    const percentBadgeRight = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded mr-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
     rowHTML += `
       <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-12">
+          ${percentBadgeRight}
+          ${trendArrowRight}
           <span>${symbol}</span>
       </div>`;
 
@@ -231,6 +241,11 @@ function connectWebSocket() {
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
+      if (data.symbol && data.change_percent !== undefined) {
+        priceData[data.symbol] = data;
+        renderUI();
+        return;
+      }
       lastData = data; 
       if (data.state && data.scriptListLeft && data.scriptListRight) {
         let newSignalKey = null;
