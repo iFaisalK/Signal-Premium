@@ -150,16 +150,15 @@ function createHeader() {
         <div>Call 2</div>
         ${call2ModeToggle}
       </div>
-      <div class="p-2 border-b border-r border-gray-200 bg-blue-100 text-blue-600 row-span-2 flex items-center justify-center font-bold flex-col">
+      <div class="p-2 border-b bg-blue-100 text-blue-600 row-span-2 flex items-center justify-center font-bold flex-col">
         <div>CALL 3${goCountDisplay}</div>
         ${call3ModeToggle}
       </div>
-      <div class="p-2 row-span-2 flex items-center justify-end pr-4 bg-gray-50">Symbol</div>
       
       <div class="p-2 border-amber-200 text-green-700 bg-amber-100">Buy</div>
       <div class="p-2 border-amber-200 text-red-700 bg-amber-100">Sell</div>
       <div class="p-2 border-gray-200 text-green-600 bg-gray-50">Buy</div>
-      <div class="p-2 border-r border-gray-200 text-red-600 bg-gray-50">Sell</div>
+      <div class="p-2 text-red-600 bg-gray-50">Sell</div>
     </div>
   `;
 }
@@ -277,13 +276,13 @@ function renderGrid(container, scriptList, state) {
     const changePercent = priceData[symbol]?.change_percent;
     const arrowColor = isCurrentlyFlashing ? 'text-white' : (changePercent >= 0 ? 'text-green-600' : 'text-red-600');
     const trendArrow = changePercent !== undefined ? `<span class="material-symbols-outlined ${arrowColor} text-lg mr-1" style="text-shadow: 0 0 2px rgba(0,0,0,0.3);">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
-    const percentBadge = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded ml-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
+    const percentBadge = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded mr-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
     rowHTML += `
       <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-12 ${symbolFlashClass}">
           <div class="flex items-center">
               ${trendArrow}
-              <span>${symbol}</span>
               ${percentBadge}
+              <span>${symbol}</span>
               ${strongBadge}
               ${timeframeBadge}
           </div>
@@ -321,7 +320,7 @@ function renderGrid(container, scriptList, state) {
           cellBorder = "border-blue-200/60";
       }
 
-      const borderRight = (cellIndex === 1 || cellIndex === 3 || cellIndex === 4) ? "border-r" : "";
+      const borderRight = (cellIndex === 1 || cellIndex === 3) ? "border-r" : "";
       let cellClasses = `p-2 ${borderRight} ${cellBorder} text-xs transition-colors duration-500 h-12 flex items-center justify-center ${cellBg}`;
 
       let cellContent = "";
@@ -413,19 +412,7 @@ function renderGrid(container, scriptList, state) {
       rowHTML += `<div class="${cellClasses}">${cellContent}</div>`;
     });
 
-    // Symbol Right
-    const arrowColorRight = isCurrentlyFlashing ? 'text-white' : (changePercent >= 0 ? 'text-green-600' : 'text-red-600');
-    const trendArrowRight = changePercent !== undefined ? `<span class="material-symbols-outlined ${arrowColorRight} text-lg mr-1" style="text-shadow: 0 0 2px rgba(0,0,0,0.3);">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
-    const percentBadgeRight = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded mr-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
-    rowHTML += `
-      <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-12 ${symbolFlashClass}">
-          <div class="flex items-center">
-              ${percentBadgeRight}
-              ${strongBadge}
-              ${trendArrowRight}
-              <span>${symbol}</span>
-          </div>
-      </div>`;
+
 
     rowHTML += `</div>`;
     html += rowHTML;

@@ -201,6 +201,24 @@ app.post("/price", async (req, res) => {
   const priceData = { symbol, open_price, current_price, change_percent, time };
   priceState[symbol] = priceData;
   
+  // Persist to DynamoDB (overwrite price data only)
+  try {
+    const ttl_timestamp = Math.floor(Date.now() / 1000) + 15 * 24 * 60 * 60;
+    const params = {
+      TableName: tableName,
+      Item: {
+        symbol: { S: `${symbol}_price` },
+        priceData: { S: JSON.stringify(priceData) },
+        lastUpdated: { S: new Date().toISOString() },
+        ttl: { N: ttl_timestamp.toString() },
+      },
+    };
+    await dynamoDBClient.send(new PutItemCommand(params));
+    console.log(`💾 Persisted price data for ${symbol} to DynamoDB.`);
+  } catch (dbError) {
+    console.error("🔥 DynamoDB Price Put Error:", dbError);
+  }
+  
   // Broadcast to all connected clients
   for (const client of wss.clients) {
     if (client.readyState === client.OPEN) {
@@ -363,12 +381,20 @@ async function loadDataFromDB() {
 
     if (data.Items) {
       data.Items.forEach((item) => {
-        if (item.symbol && item.symbol.S && item.stateData && item.stateData.S) {
+        if (item.symbol && item.symbol.S) {
           const symbolKey = item.symbol.S;
-          // Only load data if symbol exists in our static list
-          if (signalState[symbolKey]) {
+          
+          // Load signal data
+          if (item.stateData && item.stateData.S && signalState[symbolKey]) {
             const stateData = JSON.parse(item.stateData.S);
             signalState[symbolKey] = { ...signalState[symbolKey], ...stateData };
+          }
+          
+          // Load price data
+          if (symbolKey.endsWith('_price') && item.priceData && item.priceData.S) {
+            const baseSymbol = symbolKey.replace('_price', '');
+            const priceData = JSON.parse(item.priceData.S);
+            priceState[baseSymbol] = priceData;
           }
         }
       });

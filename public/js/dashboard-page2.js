@@ -110,15 +110,14 @@ function createHeader() {
       
       <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 1</div>
       <div class="p-2 border-b border-blue-300 col-span-2 bg-blue-400 text-white font-bold tracking-wider">CALL 2</div>
-      <div class="p-2 border-b border-r border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 3</div>
-      <div class="p-2 row-span-2 flex items-center justify-end pr-4 bg-gray-50">Symbol</div>
+      <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider">CALL 3</div>
       
       <div class="p-2 border-gray-200 text-green-600 bg-gray-50">Buy</div>
       <div class="p-2 border-gray-200 text-red-600 bg-gray-50">Sell</div>
       <div class="p-2 border-blue-200 text-green-700 bg-blue-100">Buy</div>
       <div class="p-2 border-blue-200 text-red-700 bg-blue-100">Sell</div>
       <div class="p-2 border-amber-200 text-green-700 bg-amber-100">Buy</div>
-      <div class="p-2 border-r border-amber-200 text-red-700 bg-amber-100">Sell</div>
+      <div class="p-2 border-amber-200 text-red-700 bg-amber-100">Sell</div>
     </div>
   `;
 }
@@ -209,16 +208,6 @@ function renderGrid(container, scriptList, state) {
       }
       rowHTML += `<div class="${cellClasses}">${cellContent}</div>`;
     });
-
-    // Symbol Right
-    const trendArrowRight = changePercent !== undefined ? `<span class="material-symbols-outlined ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'} text-lg mr-1">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
-    const percentBadgeRight = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded mr-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
-    rowHTML += `
-      <div class="p-2 border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-end pr-4 h-12">
-          ${percentBadgeRight}
-          ${trendArrowRight}
-          <span>${symbol}</span>
-      </div>`;
 
     rowHTML += `</div>`;
     html += rowHTML;
