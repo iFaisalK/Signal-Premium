@@ -74,15 +74,14 @@ function setUniversalInterval(interval) {
     call2Mode = interval;
     call3Mode = interval;
     
-    // Update button styles
-    document.getElementById('interval-15m').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '15m' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
-    document.getElementById('interval-1h').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '1h' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
-    
     // Update center display
     document.getElementById('current-interval-display').textContent = interval === '15m' ? '15 min' : '1 hour';
     
     renderUI();
 }
+
+// Make function globally available
+window.setUniversalInterval = setUniversalInterval;
 
 function toggleSymbolMute(symbol) {
     // Function kept for compatibility but no longer used
@@ -137,7 +136,6 @@ function createHeader() {
   
   return `
     <div class="grid-container text-xs font-semibold text-center text-gray-500 sticky top-0 bg-white z-10 shadow-sm border-b border-gray-300">
-      <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50"></div>
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-gray-50">Symbol</div>
       
       <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider flex items-center justify-center">
@@ -234,20 +232,16 @@ function renderGrid(container, scriptList, state) {
     const muteIcon = isMuted ? "🔕" : "🔔";
     const muteBtnClass = isMuted ? "muted" : "";
 
-    let rowHTML = `<div class="grid-container text-center ${rowBaseClass} border-b border-gray-100">`;
-    
-    // 0. Mute Column
     const isDualMatch = isBothIntervals && ((isMatch_15m && c1Buy_15m === c1Buy_1h) || (isMatch_15m && c1Sell_15m === c1Sell_1h));
-    rowHTML += `
-      <div class="p-2 border-r border-gray-200 h-full flex items-center justify-center">
-      </div>`;
-
-    // 1. Symbol Name (Left)
+    const strongRowClass = isDualMatch ? (c1Buy ? 'strong-row-buy' : 'strong-row-sell') : '';
+    let rowHTML = `<div class="grid-container text-center ${rowBaseClass} ${strongRowClass} border-b border-gray-100">`;
+    
+    // 0. Symbol Name (Left)
     const changePercent = priceData[symbol]?.change_percent;
     const arrowColor = isCurrentlyFlashing ? 'text-white' : (changePercent >= 0 ? 'text-green-600' : 'text-red-600');
     const trendArrow = changePercent !== undefined ? `<span class="material-symbols-outlined ${arrowColor} text-lg mr-1" style="text-shadow: 0 0 2px rgba(0,0,0,0.3);">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
     const percentBadge = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded mr-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
-    const strongBadge = isDualMatch ? '<span class="strong-badge badge-buy">STRONG</span>' : '';
+    const strongBadge = isDualMatch ? `<span class="strong-badge ${c1Buy ? 'badge-buy' : 'badge-sell'}">STRONG</span>` : '';
     rowHTML += `
       <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-12 ${symbolFlashClass}">
           <div class="flex items-center">

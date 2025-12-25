@@ -40,15 +40,14 @@ function setUniversalInterval(interval) {
     call2Mode = interval;
     call3Mode = interval;
     
-    // Update button styles
-    document.getElementById('interval-15m').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '15m' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
-    document.getElementById('interval-1h').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '1h' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
-    
     // Update center display
     document.getElementById('current-interval-display').textContent = interval === '15m' ? '15 min' : '1 hour';
     
     renderUI();
 }
+
+// Make function globally available
+window.setUniversalInterval = setUniversalInterval;
 
 function renderUI() {
     if (lastData) {

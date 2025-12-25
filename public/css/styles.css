@@ -5,8 +5,8 @@ body {
 /* --- GRID CONFIGURATION --- */
 .grid-container {
   display: grid;
-  /* Columns: Mute | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Call3 GO */
-  grid-template-columns: 30px 2fr 1fr 1fr 1fr 1fr 1fr; 
+  /* Columns: Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Call3 GO */
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr; 
   font-size: 0.8rem;
   align-items: center;
 }
@@ -40,15 +40,11 @@ body {
   background-color: rgba(34, 197, 94, 0.9) !important;
   color: white !important;
   border-radius: 6px !important;
-  border: 3px solid #7c2d12 !important;
-  border-left: 6px solid #7c2d12 !important;
 }
 .flash-red {
   background-color: rgba(239, 68, 68, 0.9) !important;
   color: white !important;
   border-radius: 6px !important;
-  border: 3px solid #7c2d12 !important;
-  border-left: 6px solid #7c2d12 !important;
 }
 
 /* Dark brown indicator for dual interval matches */
@@ -116,6 +112,45 @@ body {
     background: #f3f4f6; 
     color: #1f2937;
     transform: scale(1.05);
+}
+
+/* Match row highlighting for all matching signals */
+.match-row-buy {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%) !important;
+}
+
+.match-row-sell {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%) !important;
+}
+
+/* Strong row highlighting for dual matches */
+.strong-row-buy {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border: 2px solid rgba(34, 197, 94, 0.9) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2) !important;
+}
+
+.strong-row-sell {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border: 2px solid rgba(239, 68, 68, 0.9) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2) !important;
+}
+
+.strong-row-buy .bg-white,
+.strong-row-buy .bg-gray-50,
+.strong-row-buy .bg-amber-50,
+.strong-row-buy .bg-amber-100\/60,
+.strong-row-buy .bg-blue-50,
+.strong-row-buy .bg-blue-100\/60,
+.strong-row-sell .bg-white,
+.strong-row-sell .bg-gray-50,
+.strong-row-sell .bg-amber-50,
+.strong-row-sell .bg-amber-100\/60,
+.strong-row-sell .bg-blue-50,
+.strong-row-sell .bg-blue-100\/60 {
+  background: transparent !important;
 }
 
 /* "STRONG" Badge - Cylindrical/Pill Shape */
