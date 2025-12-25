@@ -69,25 +69,23 @@ function toggleGlobalPause() {
     renderUI();
 }
 
-function toggleCall1Mode() {
-    call1Mode = call1Mode === '15m' ? '1h' : '15m';
-    renderUI();
-}
-
-function toggleCall2Mode() {
-    call2Mode = call2Mode === '15m' ? '1h' : '15m';
-    renderUI();
-}
-
-function toggleCall3Mode() {
-    call3Mode = call3Mode === '15m' ? '1h' : '15m';
+function setUniversalInterval(interval) {
+    call1Mode = interval;
+    call2Mode = interval;
+    call3Mode = interval;
+    
+    // Update button styles
+    document.getElementById('interval-15m').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '15m' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
+    document.getElementById('interval-1h').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '1h' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
+    
+    // Update center display
+    document.getElementById('current-interval-display').textContent = interval === '15m' ? '15 min' : '1 hour';
+    
     renderUI();
 }
 
 function toggleSymbolMute(symbol) {
-    if (mutedSymbols.has(symbol)) mutedSymbols.delete(symbol);
-    else mutedSymbols.add(symbol);
-    renderUI();
+    // Function kept for compatibility but no longer used
 }
 
 function muteRowFlashing(symbol, matchTime) {
@@ -133,26 +131,23 @@ function createHeader() {
   }
   
   const goCountDisplay = goCount > 0 ? `<span class="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full ml-1" title="Active GO signals: ${goSymbols.join(', ')}">${goCount}</span>` : '';
-  const call1ModeToggle = `<button onclick="toggleCall1Mode()" class="text-xs px-2 py-1 bg-gray-800 text-white border border-gray-700 rounded ml-2 hover:bg-gray-700" title="Switch between 15min and 1hour signals">${call1Mode}</button>`;
-  const call2ModeToggle = `<button onclick="toggleCall2Mode()" class="text-xs px-2 py-1 bg-white border border-gray-300 rounded ml-2 hover:bg-gray-50" title="Switch between 15min and 1hour signals">${call2Mode}</button>`;
-  const call3ModeToggle = `<button onclick="toggleCall3Mode()" class="text-xs px-2 py-1 bg-white border border-blue-300 rounded ml-2 hover:bg-blue-50" title="Switch between 15min and 1hour signals">${call3Mode}</button>`;
+  const call1ModeToggle = ``;
+  const call2ModeToggle = ``;
+  const call3ModeToggle = ``;
   
   return `
     <div class="grid-container text-xs font-semibold text-center text-gray-500 sticky top-0 bg-white z-10 shadow-sm border-b border-gray-300">
-      <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50">🔔</div>
+      <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50"></div>
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-gray-50">Symbol</div>
       
-      <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider flex items-center justify-center flex-col">
+      <div class="p-2 border-b border-amber-300 col-span-2 bg-amber-400 text-white font-bold tracking-wider flex items-center justify-center">
         <div>CALL 1</div>
-        ${call1ModeToggle}
       </div>
-      <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600 flex items-center justify-center font-bold flex-col">
+      <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600 flex items-center justify-center font-bold">
         <div>Call 2</div>
-        ${call2ModeToggle}
       </div>
-      <div class="p-2 border-b bg-blue-100 text-blue-600 row-span-2 flex items-center justify-center font-bold flex-col">
+      <div class="p-2 border-b bg-blue-100 text-blue-600 row-span-2 flex items-center justify-center font-bold">
         <div>CALL 3${goCountDisplay}</div>
-        ${call3ModeToggle}
       </div>
       
       <div class="p-2 border-amber-200 text-green-700 bg-amber-100">Buy</div>
@@ -182,82 +177,58 @@ function renderGrid(container, scriptList, state) {
     const c2Sell_1h = symbolState['call2_1h_sell']?.active;
 
     let symbolFlashClass = ""; 
-    let strongBadge = "";
-    let matchTime = 0;
     let isCurrentlyFlashing = false;
     let flashTimeframe = "";
     
     let isMatch_15m = (c1Buy_15m && c2Buy_15m) || (c1Sell_15m && c2Sell_15m);
     let isMatch_1h = (c1Buy_1h && c2Buy_1h) || (c1Sell_1h && c2Sell_1h);
     
-    let isMatch = isMatch_15m || isMatch_1h;
-    let c1Buy, c1Sell;
+    // Only check matches for the currently selected mode
+    let isMatch = false;
+    let isBothIntervals = false;
+    let c1Buy;
     
-    if (isMatch_15m) {
-      flashTimeframe = "15m";
-      c1Buy = c1Buy_15m;
-      c1Sell = c1Sell_15m;
-    } else if (isMatch_1h) {
-      flashTimeframe = "1h";
-      c1Buy = c1Buy_1h;
-      c1Sell = c1Sell_1h;
+    if (call1Mode === '15m' && call2Mode === '15m') {
+      // In 15m mode, check if 15m matches
+      if (isMatch_15m) {
+        isMatch = true;
+        c1Buy = c1Buy_15m;
+        // Check if 1h also matches (both intervals)
+        isBothIntervals = isMatch_1h;
+      }
+    } else if (call1Mode === '1h' && call2Mode === '1h') {
+      // In 1h mode, check if 1h matches
+      if (isMatch_1h) {
+        isMatch = true;
+        c1Buy = c1Buy_1h;
+        // Check if 15m also matches (both intervals)
+        isBothIntervals = isMatch_15m;
+      }
     }
     
     if (isMatch) {
-        let t1 = 0; t2 = 0;
-        
-        if (c1Buy) {
-            const c1Key = flashTimeframe === "15m" ? 'call1_buy' : 'call1_1h_buy';
-            const c2Key = flashTimeframe === "15m" ? 'call2_buy' : 'call2_1h_buy';
-            t1 = symbolState[c1Key]?.trendStartTime || symbolState[c1Key]?.time || 0;
-            t2 = symbolState[c2Key]?.trendStartTime || symbolState[c2Key]?.time || 0;
+        isCurrentlyFlashing = true;
+        if (isBothIntervals) {
+            // Both intervals match - check if same color
+            const sameColor = (isMatch_15m && c1Buy_15m === c1Buy_1h) || (isMatch_15m && c1Sell_15m === c1Sell_1h);
+            
+            if (sameColor) {
+                // Same color in both intervals - use black border
+                if (c1Buy) symbolFlashClass = "flash-green";
+                else symbolFlashClass = "flash-red";
+            } else {
+                // Different colors - use static highlight
+                if (c1Buy) symbolFlashClass = "static-green";
+                else symbolFlashClass = "static-red";
+            }
         } else {
-            const c1Key = flashTimeframe === "15m" ? 'call1_sell' : 'call1_1h_sell';
-            const c2Key = flashTimeframe === "15m" ? 'call2_sell' : 'call2_1h_sell';
-            t1 = symbolState[c1Key]?.trendStartTime || symbolState[c1Key]?.time || 0;
-            t2 = symbolState[c2Key]?.trendStartTime || symbolState[c2Key]?.time || 0;
-        }
-        
-        t1 = (typeof t1 === 'number') ? t1 : (isNaN(Date.parse(t1)) ? 0 : Date.parse(t1));
-        t2 = (typeof t2 === 'number') ? t2 : (isNaN(Date.parse(t2)) ? 0 : Date.parse(t2));
-        
-        matchTime = Math.max(t1, t2);
-        
-        // --- Timeout Checks ---
-        const now = Date.now();
-        const timeSinceMatch = now - matchTime;
-        const isExpired = timeSinceMatch > FLASH_TIMEOUT_MS; 
-
-        const isRowMuted = rowMuteTimestamps[symbol] && rowMuteTimestamps[symbol].includes(matchTime);
-        const shouldFlash = (matchTime > lastAcknowledgeTime) && !isRowMuted && !isGlobalPaused && !mutedSymbols.has(symbol) && !isExpired;
-
-        // Winner Logic: Call 2 is "First" if t2 < t1
-        const isCall2First = t2 < t1;
-        const winner = t1 <= t2 ? "c1" : "c2"; 
-        const isStrong = winner === "c2";
-
-        // "STRONG" Badge Logic
-        if (isStrong) {
-            strongBadge = `<span class="ml-1" title="Strong signal">🟡</span>`;
-        }
-
-        if (shouldFlash) {
-            isCurrentlyFlashing = true;
-            if (c1Buy) symbolFlashClass = "flash-green";
-            else symbolFlashClass = "flash-red";
-        } else if (isExpired && isStrong) {
-            // --- PERSISTENCE LOGIC (After 20 mins, Strong Only) ---
-            // Static, intense background with white text
-            isCurrentlyFlashing = true; // Show timeframe badge for static STRONG too
+            // Single interval match - use static highlight
             if (c1Buy) symbolFlashClass = "static-green";
             else symbolFlashClass = "static-red";
         }
     }
     
-    // Per-Row Pause Button
-    const pauseBtn = isCurrentlyFlashing 
-        ? `<button class="stop-row-btn" onclick="muteRowFlashing('${symbol}', ${matchTime})" title="Pause flashing">⏸️</button>`
-        : '';
+
     
     const isMuted = mutedSymbols.has(symbol);
     const muteIcon = isMuted ? "🔕" : "🔔";
@@ -266,17 +237,17 @@ function renderGrid(container, scriptList, state) {
     let rowHTML = `<div class="grid-container text-center ${rowBaseClass} border-b border-gray-100">`;
     
     // 0. Mute Column
+    const isDualMatch = isBothIntervals && ((isMatch_15m && c1Buy_15m === c1Buy_1h) || (isMatch_15m && c1Sell_15m === c1Sell_1h));
     rowHTML += `
       <div class="p-2 border-r border-gray-200 h-full flex items-center justify-center">
-          <button class="mute-btn text-xs ${muteBtnClass}" onclick="toggleSymbolMute('${symbol}')" title="Toggle Mute">${muteIcon}</button>
       </div>`;
 
     // 1. Symbol Name (Left)
-    const timeframeBadge = isCurrentlyFlashing ? `<span class="text-xs px-1.5 py-0.5 bg-gray-700 text-white rounded ml-2 opacity-80">${flashTimeframe}</span>` : '';
     const changePercent = priceData[symbol]?.change_percent;
     const arrowColor = isCurrentlyFlashing ? 'text-white' : (changePercent >= 0 ? 'text-green-600' : 'text-red-600');
     const trendArrow = changePercent !== undefined ? `<span class="material-symbols-outlined ${arrowColor} text-lg mr-1" style="text-shadow: 0 0 2px rgba(0,0,0,0.3);">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
     const percentBadge = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded mr-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
+    const strongBadge = isDualMatch ? '<span class="strong-badge badge-buy">STRONG</span>' : '';
     rowHTML += `
       <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-12 ${symbolFlashClass}">
           <div class="flex items-center">
@@ -284,7 +255,6 @@ function renderGrid(container, scriptList, state) {
               ${percentBadge}
               <span>${symbol}</span>
               ${strongBadge}
-              ${timeframeBadge}
           </div>
       </div>`;
 

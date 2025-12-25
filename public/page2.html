@@ -17,16 +17,19 @@
 
   <body class="bg-gray-100 text-gray-900 h-screen flex flex-col page2">
     
-    <div class="floating-controls">
-        <a href="index.html" class="control-btn" style="background-color: #6366f1; text-decoration: none;">
+    <div class="bg-white shadow-md border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-4">
+            <div class="flex bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-1.5 border-2 border-blue-200 shadow-sm">
+                <button id="interval-15m" class="px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 bg-blue-500 text-white shadow-md" onclick="setUniversalInterval('15m')">15 min</button>
+                <button id="interval-1h" class="px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 text-gray-600 hover:bg-white/50" onclick="setUniversalInterval('1h')">1 hour</button>
+            </div>
+        </div>
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2 rounded-full shadow-lg font-bold text-lg">
+            <span id="current-interval-display">15 min</span> Interval
+        </div>
+        <a href="index.html" class="px-5 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg flex items-center gap-2">
             <span>📄</span> Page 1
         </a>
-        <button id="global-pause-btn" class="control-btn btn-pause" onclick="toggleGlobalPause()">
-            <span>⏸️</span> Pause All
-        </button>
-        <button id="global-stop-btn" class="control-btn btn-stop" onclick="acknowledgeAllFlashing()">
-            <span>🛑</span> Stop All
-        </button>
     </div>
 
     <main

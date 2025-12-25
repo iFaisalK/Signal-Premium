@@ -11,10 +11,10 @@ body {
   align-items: center;
 }
 
-/* Page 2 grid with 6 signal columns */
+/* Page 2 grid with 8 signal columns */
 .page2 .grid-container {
-  /* Columns: Mute | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Call3 Buy | Call3 Sell */
-  grid-template-columns: 30px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  /* Columns: Trend | Symbol | Call1 Buy | Call1 Sell | Call2 Buy | Call2 Sell | Call3 Buy | Call3 Sell */
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
 }
 
 /* --- ANIMATIONS --- */
@@ -37,43 +37,39 @@ body {
 
 /* --- UNIFIED SYMBOL FLASHING (SLOWER) --- */
 .flash-green {
-  /* Unified flash, 1.2s duration */
-  animation: premium-flash-green 1.2s infinite;
-  border-radius: 6px;
+  background-color: rgba(34, 197, 94, 0.9) !important;
+  color: white !important;
+  border-radius: 6px !important;
+  border: 3px solid #7c2d12 !important;
+  border-left: 6px solid #7c2d12 !important;
 }
 .flash-red {
-  /* Unified flash, 1.2s duration */
-  animation: premium-flash-red 1.2s infinite;
-  border-radius: 6px;
+  background-color: rgba(239, 68, 68, 0.9) !important;
+  color: white !important;
+  border-radius: 6px !important;
+  border: 3px solid #7c2d12 !important;
+  border-left: 6px solid #7c2d12 !important;
 }
 
-/* Green Flash Pattern */
-@keyframes premium-flash-green {
-  0% { background-color: transparent; box-shadow: none; }
-  50% { background-color: rgba(34, 197, 94, 0.9); color: white; box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); }
-  100% { background-color: transparent; box-shadow: none; }
-}
-
-/* Red Flash Pattern */
-@keyframes premium-flash-red {
-  0% { background-color: transparent; box-shadow: none; }
-  50% { background-color: rgba(239, 68, 68, 0.9); color: white; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
-  100% { background-color: transparent; box-shadow: none; }
+/* Dark brown indicator for dual interval matches */
+.dual-match-indicator {
+  background-color: #7c2d12;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
 }
 
 /* --- STATIC PERSISTENCE (After 20 Mins) --- */
 /* Matches the exact color of the 50% mark in the flash animation */
 .static-green {
-  background-color: rgba(34, 197, 94, 0.9); /* Intense Green */
+  background-color: rgba(34, 197, 94, 0.9) !important; /* Intense Green */
   color: white !important;
-  border-radius: 6px;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  border-radius: 6px !important;
 }
 .static-red {
-  background-color: rgba(239, 68, 68, 0.9); /* Intense Red */
+  background-color: rgba(239, 68, 68, 0.9) !important; /* Intense Red */
   color: white !important;
-  border-radius: 6px;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  border-radius: 6px !important;
 }
 /* Fix for strong badge text color when inside a static dark background */
 .static-green .strong-badge, .static-red .strong-badge {

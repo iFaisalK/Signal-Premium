@@ -1,17 +1,13 @@
 const gridLeft = document.getElementById("grid-left");
 const gridRight = document.getElementById("grid-right");
-const globalStopBtn = document.getElementById("global-stop-btn");
-const globalPauseBtn = document.getElementById("global-pause-btn");
 const SIGNAL_KEYS = ["call1_buy", "call1_sell", "call2_buy", "call2_sell", "call3_buy", "call3_sell"];
-const FLASH_TIMEOUT_MS = 20 * 60 * 1000; // 20 Minutes in Milliseconds
 
 // --- STATE ---
-let lastAcknowledgeTime = 0; 
-let isGlobalPaused = false; 
-const rowMuteTimestamps = {}; 
-const mutedSymbols = new Set();
 let lastData = null;
 const priceData = {};
+let call1Mode = '15m';
+let call2Mode = '15m';
+let call3Mode = '15m';
 
 // --- Sound ---
 let audioUnlocked = false;
@@ -38,43 +34,19 @@ document.body.addEventListener("click", () => {
 );
 
 // --- ACTIONS ---
-function acknowledgeAllFlashing() {
-    lastAcknowledgeTime = Date.now();
+
+function setUniversalInterval(interval) {
+    call1Mode = interval;
+    call2Mode = interval;
+    call3Mode = interval;
     
-    const originalText = globalStopBtn.innerHTML;
-    globalStopBtn.innerHTML = "<span>✅</span> Stopped!";
-    globalStopBtn.style.backgroundColor = "#16a34a"; 
+    // Update button styles
+    document.getElementById('interval-15m').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '15m' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
+    document.getElementById('interval-1h').className = `px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${interval === '1h' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-white/50'}`;
     
-    setTimeout(() => {
-        globalStopBtn.innerHTML = originalText;
-        globalStopBtn.style.backgroundColor = ""; 
-    }, 1000);
-
-    if (isGlobalPaused) toggleGlobalPause(); 
-    renderUI();
-}
-
-function toggleGlobalPause() {
-    isGlobalPaused = !isGlobalPaused;
-    if (isGlobalPaused) {
-        globalPauseBtn.innerHTML = "<span>▶️</span> Resume";
-        globalPauseBtn.className = "control-btn btn-resume";
-    } else {
-        globalPauseBtn.innerHTML = "<span>⏸️</span> Pause All";
-        globalPauseBtn.className = "control-btn btn-pause";
-    }
-    renderUI();
-}
-
-function toggleSymbolMute(symbol) {
-    if (mutedSymbols.has(symbol)) mutedSymbols.delete(symbol);
-    else mutedSymbols.add(symbol);
-    renderUI();
-}
-
-function muteRowFlashing(symbol, matchTime) {
-    if (!rowMuteTimestamps[symbol]) rowMuteTimestamps[symbol] = [];
-    rowMuteTimestamps[symbol].push(matchTime);
+    // Update center display
+    document.getElementById('current-interval-display').textContent = interval === '15m' ? '15 min' : '1 hour';
+    
     renderUI();
 }
 
@@ -105,7 +77,7 @@ function getCounterClass(count, isBuy) {
 function createHeader() {
   return `
     <div class="grid-container text-xs font-semibold text-center text-gray-500 sticky top-0 bg-white z-10 shadow-sm border-b border-gray-300">
-      <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-center bg-gray-50">🔔</div>
+      <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-white">Trend</div>
       <div class="p-2 border-r border-gray-200 row-span-2 flex items-center justify-start pl-2 bg-gray-50">Symbol</div>
       
       <div class="p-2 border-b border-gray-200 col-span-2 bg-gray-100 text-gray-600">Call 1</div>
@@ -129,29 +101,21 @@ function renderGrid(container, scriptList, state) {
     const symbolState = state[symbol];
     let rowBaseClass = index % 2 === 0 ? "bg-white" : "bg-gray-50";
     
-    // No matching logic for page 2 - just display signals
-    
-    const isMuted = mutedSymbols.has(symbol);
-    const muteIcon = isMuted ? "🔕" : "🔔";
-    const muteBtnClass = isMuted ? "muted" : "";
-
     let rowHTML = `<div class="grid-container text-center ${rowBaseClass} border-b border-gray-100">`;
     
-    // 0. Mute Column
-    rowHTML += `
-      <div class="p-2 border-r border-gray-200 h-full flex items-center justify-center">
-          <button class="mute-btn text-xs ${muteBtnClass}" onclick="toggleSymbolMute('${symbol}')" title="Toggle Mute">${muteIcon}</button>
-      </div>`;
-
-    // 1. Symbol Name (Left)
+    // 0. Trend Column (Arrow + %)
     const changePercent = priceData[symbol]?.change_percent;
     const trendArrow = changePercent !== undefined ? `<span class="material-symbols-outlined ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'} text-lg mr-1">trending_${changePercent >= 0 ? 'up' : 'down'}</span>` : '';
-    const percentBadge = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded ml-2 ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
+    const percentBadge = changePercent !== undefined ? `<span class="text-xs px-1.5 py-0.5 rounded ${changePercent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%</span>` : '';
+    rowHTML += `
+      <div class="p-2 border-r border-gray-200 h-full flex items-center justify-start pl-2 bg-white">
+          ${trendArrow}${percentBadge}
+      </div>`;
+
+    // 1. Symbol Name
     rowHTML += `
       <div class="p-2 border-r border-gray-200 font-bold text-gray-800 text-sm flex items-center justify-start pl-4 h-12">
-          ${trendArrow}
           <span>${symbol}</span>
-          ${percentBadge}
       </div>`;
 
     SIGNAL_KEYS.forEach((key, cellIndex) => {
